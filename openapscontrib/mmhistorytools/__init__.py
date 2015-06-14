@@ -1,3 +1,6 @@
+import argparse
+import sys
+
 from openaps.uses.use import Use
 
 
@@ -39,7 +42,12 @@ class cleanup(Use):
      - Adjusts TempBasalDuration records for overlapping entries
     """
     def get_params(self, args):
-        return dict(input=args.input)
+        return dict(input=args.infile)
 
     def configure_app(self, app, parser):
-        pass
+        parser.add_argument('infile', nargs='?', type=argparse.FileType('r'), default=sys.stdin)
+
+    def main(self, args, app):
+        params = self.get_params(args)
+        print params.get('input')
+        return 'foo'
