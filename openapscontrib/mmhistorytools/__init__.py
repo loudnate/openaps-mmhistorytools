@@ -1,7 +1,15 @@
+"""
+mmhistorytools - tools for cleaning, condensing, and reformatting history data
+"""
+
 import argparse
+from dateutil import parser as dateparser
+import json
 import sys
 
 from openaps.uses.use import Use
+
+from historytools import HistoryCleanup
 
 
 # set_config is needed by openaps for all vendors.
@@ -29,7 +37,7 @@ def display_device(device):
 def get_uses(device, config):
     # make an Example, openaps use command
     # add your Uses here!
-    return []
+    return [cleanup]
 
 
 class cleanup(Use):
@@ -42,12 +50,16 @@ class cleanup(Use):
      - Adjusts TempBasalDuration records for overlapping entries
     """
     def get_params(self, args):
-        return dict(input=args.infile)
+        return dict(infile=args.infile, start_datetime=args.start, end_datetime=args.end)
 
     def configure_app(self, app, parser):
         parser.add_argument('infile', nargs='?', type=argparse.FileType('r'), default=sys.stdin)
+        parser.add_argument('--start', type=dateparser.parse, default=None)
+        parser.add_argument('--end', type=dateparser.parse, default=None)
 
     def main(self, args, app):
         params = self.get_params(args)
-        print params.get('input')
-        return 'foo'
+
+        tool = HistoryCleanup(json.load(params.pop('infile')), **params)
+
+        return tool.clean_history

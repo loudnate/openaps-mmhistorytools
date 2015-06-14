@@ -96,7 +96,7 @@ class HistoryCleanup(object):
                 "timestamp": self.end_datetime.isoformat(),
             })
         else:
-            self._resume_datetime = None
+            self._last_resume_event = None
 
         return events
 
