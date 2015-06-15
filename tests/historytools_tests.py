@@ -4,18 +4,19 @@ import os
 import sys
 import unittest
 
-from openapscontrib.mmhistorytools.historytools import HistoryCleanup
+from openapscontrib.mmhistorytools.historytools import CleanHistory, ReconcileHistory
+
 
 def get_file_at_path(path):
     return "{}/{}".format(os.path.dirname(os.path.realpath(sys.argv[0])), path)
 
 
-class HistoryCleanupTestCase(unittest.TestCase):
+class CleanHistoryTestCase(unittest.TestCase):
     def test_duplicate_bolus_wizard_carbs(self):
         with open(get_file_at_path("fixtures/bolus_wizard_duplicates.json")) as fp:
             pump_history = json.load(fp)
 
-        h = HistoryCleanup(pump_history)
+        h = CleanHistory(pump_history)
 
         self.assertListEqual(
             [
@@ -135,11 +136,203 @@ class HistoryCleanupTestCase(unittest.TestCase):
             [event for event in h.clean_history if event["_type"] == "BolusWizard"]
         )
 
+    def test_resume_without_suspend(self):
+        pump_history = [
+            {
+                "_type": "PumpResume",
+                "_description": "PumpResume 2015-06-06T20:50:01 head[2], body[0] op[0x1f]",
+                "date": 1433620201000.0,
+                "timestamp": "2015-06-06T20:50:01",
+                "_body": "",
+                "_head": "1f20",
+                "_date": "41b214060f"
+            },
+            {
+                "_type": "OtherEvent",
+                "timestamp": "2015-06-06T18:12:34"
+            }
+        ]
+
+        h = CleanHistory(pump_history)
+
+        self.assertListEqual(pump_history + [{
+            "_type": "PumpSuspend",
+            "timestamp": "2015-06-06T18:12:34"
+        }], h.clean_history)
+
+    def test_resume_without_suspend_with_range(self):
+        pump_history = [
+            {
+                "_type": "PumpResume",
+                "_description": "PumpResume 2015-06-06T20:50:01 head[2], body[0] op[0x1f]",
+                "date": 1433620201000.0,
+                "timestamp": "2015-06-06T20:50:01",
+                "_body": "",
+                "_head": "1f20",
+                "_date": "41b214060f"
+            },
+            {
+                "_type": "OtherEvent",
+                "timestamp": "2015-06-06T18:12:34"
+            }
+        ]
+
+        h = CleanHistory(pump_history, start_datetime=datetime(2015, 06, 06, 12, 56, 34))
+
+        self.assertListEqual(pump_history + [{
+            "_type": "PumpSuspend",
+            "timestamp": "2015-06-06T12:56:34"
+        }], h.clean_history)
+
+    def test_suspend_without_resume(self):
+        pump_history = [
+            {
+                "_type": "OtherEvent",
+                "timestamp": "2015-06-06T22:12:34"
+            },
+            {
+                "_type": "OtherEvent",
+                "timestamp": "2015-06-06T21:12:34"
+            },
+            {
+                "_type": "PumpSuspend",
+                "_description": "PumpSuspend 2015-06-06T20:49:57 head[2], body[0] op[0x1e]",
+                "date": 1433620197000.0,
+                "timestamp": "2015-06-06T20:49:57",
+                "_body": "",
+                "_head": "1e01",
+                "_date": "79b114060f"
+            }
+        ]
+
+        h = CleanHistory(pump_history)
+
+        self.assertListEqual(
+            [
+                {
+                    "_type": "OtherEvent",
+                    "timestamp": "2015-06-06T22:12:34"
+                },
+                {
+                    "_type": "OtherEvent",
+                    "timestamp": "2015-06-06T21:12:34"
+                },
+                {
+                    "_type": "PumpResume",
+                    "timestamp": "2015-06-06T22:12:34"
+                },
+                {
+                    "_type": "PumpSuspend",
+                    "_description": "PumpSuspend 2015-06-06T20:49:57 head[2], body[0] op[0x1e]",
+                    "date": 1433620197000.0,
+                    "timestamp": "2015-06-06T20:49:57",
+                    "_body": "",
+                    "_head": "1e01",
+                    "_date": "79b114060f"
+                }
+            ],
+            h.clean_history
+        )
+
+    def test_suspend_without_resume_with_range(self):
+        pump_history = [
+            {
+                "_type": "OtherEvent",
+                "timestamp": "2015-06-06T22:12:34"
+            },
+            {
+                "_type": "OtherEvent",
+                "timestamp": "2015-06-06T21:12:34"
+            },
+            {
+                "_type": "PumpSuspend",
+                "_description": "PumpSuspend 2015-06-06T20:49:57 head[2], body[0] op[0x1e]",
+                "date": 1433620197000.0,
+                "timestamp": "2015-06-06T20:49:57",
+                "_body": "",
+                "_head": "1e01",
+                "_date": "79b114060f"
+            }
+        ]
+
+        h = CleanHistory(pump_history, end_datetime=datetime(2015, 06, 07, 02, 02, 01))
+
+        self.assertListEqual(
+            [
+                {
+                    "_type": "OtherEvent",
+                    "timestamp": "2015-06-06T22:12:34"
+                },
+                {
+                    "_type": "OtherEvent",
+                    "timestamp": "2015-06-06T21:12:34"
+                },
+                {
+                    "_type": "PumpResume",
+                    "timestamp": "2015-06-07T02:02:01"
+                },
+                {
+                    "_type": "PumpSuspend",
+                    "_description": "PumpSuspend 2015-06-06T20:49:57 head[2], body[0] op[0x1e]",
+                    "date": 1433620197000.0,
+                    "timestamp": "2015-06-06T20:49:57",
+                    "_body": "",
+                    "_head": "1e01",
+                    "_date": "79b114060f"
+                }
+            ],
+            h.clean_history
+        )
+
+    def test_suspend_without_resume_with_trimming_range(self):
+        pump_history = [
+            {
+                "_type": "OtherEvent",
+                "timestamp": "2015-06-06T22:12:34"
+            },
+            {
+                "_type": "OtherEvent",
+                "timestamp": "2015-06-06T21:12:34"
+            },
+            {
+                "_type": "PumpSuspend",
+                "_description": "PumpSuspend 2015-06-06T20:49:57 head[2], body[0] op[0x1e]",
+                "date": 1433620197000.0,
+                "timestamp": "2015-06-06T20:49:57",
+                "_body": "",
+                "_head": "1e01",
+                "_date": "79b114060f"
+            }
+        ]
+
+        h = CleanHistory(pump_history, end_datetime=datetime(2015, 06, 06, 21, 00, 00))
+
+        self.assertListEqual(
+            [
+                {
+                    "_type": "PumpResume",
+                    "timestamp": "2015-06-06T21:00:00"
+                },
+                {
+                    "_type": "PumpSuspend",
+                    "_description": "PumpSuspend 2015-06-06T20:49:57 head[2], body[0] op[0x1e]",
+                    "date": 1433620197000.0,
+                    "timestamp": "2015-06-06T20:49:57",
+                    "_body": "",
+                    "_head": "1e01",
+                    "_date": "79b114060f"
+                }
+            ],
+            h.clean_history
+        )
+
+
+class ReconcileHistoryTestCase(unittest.TestCase):
     def test_overlapping_temp_basals(self):
-        with open(get_file_at_path("fixtures/temp_basal.json")) as fp:
+        with open(get_file_at_path("fixtures/temp_basal_cancel.json")) as fp:
             pump_history = json.load(fp)
 
-        h = HistoryCleanup(pump_history)
+        h = ReconcileHistory(pump_history)
 
         self.assertListEqual(
             [
@@ -207,197 +400,82 @@ class HistoryCleanupTestCase(unittest.TestCase):
                     "_date": "518513060f"
                 }
             ],
-            [event for event in h.clean_history if event["_type"].startswith("TempBasal")]
+            [event for event in h.reconciled_history if event["_type"].startswith("TempBasal")]
         )
 
-    def test_resume_without_suspend(self):
-        pump_history = [
-            {
-                "_type": "PumpResume",
-                "_description": "PumpResume 2015-06-06T20:50:01 head[2], body[0] op[0x1f]",
-                "date": 1433620201000.0,
-                "timestamp": "2015-06-06T20:50:01",
-                "_body": "",
-                "_head": "1f20",
-                "_date": "41b214060f"
-            },
-            {
-                "_type": "OtherEvent",
-                "timestamp": "2015-06-06T18:12:34"
-            }
-        ]
+    def test_suspended_temp_basal(self):
+        with open(get_file_at_path("fixtures/temp_basal_suspend.json")) as fp:
+            pump_history = json.load(fp)
 
-        h = HistoryCleanup(pump_history)
-
-        self.assertListEqual(pump_history + [{
-            "_type": "PumpSuspend",
-            "timestamp": "2015-06-06T18:12:34"
-        }], h.clean_history)
-
-    def test_resume_without_suspend_with_range(self):
-        pump_history = [
-            {
-                "_type": "PumpResume",
-                "_description": "PumpResume 2015-06-06T20:50:01 head[2], body[0] op[0x1f]",
-                "date": 1433620201000.0,
-                "timestamp": "2015-06-06T20:50:01",
-                "_body": "",
-                "_head": "1f20",
-                "_date": "41b214060f"
-            },
-            {
-                "_type": "OtherEvent",
-                "timestamp": "2015-06-06T18:12:34"
-            }
-        ]
-
-        h = HistoryCleanup(pump_history, start_datetime=datetime(2015, 06, 06, 12, 56, 34))
-
-        self.assertListEqual(pump_history + [{
-            "_type": "PumpSuspend",
-            "timestamp": "2015-06-06T12:56:34"
-        }], h.clean_history)
-
-    def test_suspend_without_resume(self):
-        pump_history = [
-            {
-                "_type": "OtherEvent",
-                "timestamp": "2015-06-06T22:12:34"
-            },
-            {
-                "_type": "OtherEvent",
-                "timestamp": "2015-06-06T21:12:34"
-            },
-            {
-                "_type": "PumpSuspend",
-                "_description": "PumpSuspend 2015-06-06T20:49:57 head[2], body[0] op[0x1e]",
-                "date": 1433620197000.0,
-                "timestamp": "2015-06-06T20:49:57",
-                "_body": "",
-                "_head": "1e01",
-                "_date": "79b114060f"
-            }
-        ]
-
-        h = HistoryCleanup(pump_history)
+        h = ReconcileHistory(pump_history)
 
         self.assertListEqual(
             [
                 {
-                    "_type": "OtherEvent",
-                    "timestamp": "2015-06-06T22:12:34"
+                    "_type": "TempBasalDuration",
+                    "duration (min)": 37,
+                    "_description": "TempBasalDuration generated due to interleaved PumpSuspend event",
+                    "date": 1434204002000.0,
+                    "timestamp": "2015-06-13T15:00:02",
+                    "_body": "",
+                    "_head": "1602",
+                    "_date": "42800f0d0f"
                 },
                 {
-                    "_type": "OtherEvent",
-                    "timestamp": "2015-06-06T21:12:34"
+                    "_type": "TempBasal",
+                    "temp": "percent",
+                    "_description": "TempBasal generated due to interleaved PumpSuspend event",
+                    "date": 1434204002000.0,
+                    "timestamp": "2015-06-13T15:00:02",
+                    "_body": "08",
+                    "_head": "3378",
+                    "rate": 120,
+                    "_date": "42800f0d0f"
                 },
                 {
                     "_type": "PumpResume",
-                    "timestamp": "2015-06-06T22:12:34"
+                    "_description": "PumpResume 2015-06-13T15:00:02 head[2], body[0] op[0x1f]",
+                    "date": 1434204002000.0,
+                    "timestamp": "2015-06-13T15:00:02",
+                    "_body": "",
+                    "_head": "1f20",
+                    "_date": "42800f0d0f"
                 },
                 {
                     "_type": "PumpSuspend",
-                    "_description": "PumpSuspend 2015-06-06T20:49:57 head[2], body[0] op[0x1e]",
-                    "date": 1433620197000.0,
-                    "timestamp": "2015-06-06T20:49:57",
+                    "_description": "PumpSuspend 2015-06-13T14:54:19 head[2], body[0] op[0x1e]",
+                    "date": 1434203659000.0,
+                    "timestamp": "2015-06-13T14:54:19",
                     "_body": "",
                     "_head": "1e01",
-                    "_date": "79b114060f"
-                }
-            ],
-            h.clean_history
-        )
-
-    def test_suspend_without_resume_with_range(self):
-        pump_history = [
-            {
-                "_type": "OtherEvent",
-                "timestamp": "2015-06-06T22:12:34"
-            },
-            {
-                "_type": "OtherEvent",
-                "timestamp": "2015-06-06T21:12:34"
-            },
-            {
-                "_type": "PumpSuspend",
-                "_description": "PumpSuspend 2015-06-06T20:49:57 head[2], body[0] op[0x1e]",
-                "date": 1433620197000.0,
-                "timestamp": "2015-06-06T20:49:57",
-                "_body": "",
-                "_head": "1e01",
-                "_date": "79b114060f"
-            }
-        ]
-
-        h = HistoryCleanup(pump_history, end_datetime=datetime(2015, 06, 07, 02, 02, 01))
-
-        self.assertListEqual(
-            [
-                {
-                    "_type": "OtherEvent",
-                    "timestamp": "2015-06-06T22:12:34"
+                    "_date": "53b60e0d0f"
                 },
                 {
-                    "_type": "OtherEvent",
-                    "timestamp": "2015-06-06T21:12:34"
-                },
-                {
-                    "_type": "PumpResume",
-                    "timestamp": "2015-06-07T02:02:01"
-                },
-                {
-                    "_type": "PumpSuspend",
-                    "_description": "PumpSuspend 2015-06-06T20:49:57 head[2], body[0] op[0x1e]",
-                    "date": 1433620197000.0,
-                    "timestamp": "2015-06-06T20:49:57",
+                    "_type": "TempBasalDuration",
+                    "duration (min)": 16,
+                    "_description": "TempBasalDuration 2015-06-13T14:37:58 head[2], body[0] op[0x16]",
+                    "date": 1434202678000.0,
+                    "timestamp": "2015-06-13T14:37:58",
                     "_body": "",
-                    "_head": "1e01",
-                    "_date": "79b114060f"
-                }
-            ],
-            h.clean_history
-        )
-
-    def test_suspend_without_resume_with_trimming_range(self):
-        pump_history = [
-            {
-                "_type": "OtherEvent",
-                "timestamp": "2015-06-06T22:12:34"
-            },
-            {
-                "_type": "OtherEvent",
-                "timestamp": "2015-06-06T21:12:34"
-            },
-            {
-                "_type": "PumpSuspend",
-                "_description": "PumpSuspend 2015-06-06T20:49:57 head[2], body[0] op[0x1e]",
-                "date": 1433620197000.0,
-                "timestamp": "2015-06-06T20:49:57",
-                "_body": "",
-                "_head": "1e01",
-                "_date": "79b114060f"
-            }
-        ]
-
-        h = HistoryCleanup(pump_history, end_datetime=datetime(2015, 06, 06, 21, 00, 00))
-
-        self.assertListEqual(
-            [
-                {
-                    "_type": "PumpResume",
-                    "timestamp": "2015-06-06T21:00:00"
+                    "_head": "1602",
+                    "_date": "7aa50e0d0f"
                 },
                 {
-                    "_type": "PumpSuspend",
-                    "_description": "PumpSuspend 2015-06-06T20:49:57 head[2], body[0] op[0x1e]",
-                    "date": 1433620197000.0,
-                    "timestamp": "2015-06-06T20:49:57",
-                    "_body": "",
-                    "_head": "1e01",
-                    "_date": "79b114060f"
+                    "_type": "TempBasal",
+                    "temp": "percent",
+                    "_description": "TempBasal 2015-06-13T14:37:58 head[2], body[1] op[0x33]",
+                    "date": 1434202678000.0,
+                    "timestamp": "2015-06-13T14:37:58",
+                    "_body": "08",
+                    "_head": "3378",
+                    "rate": 120,
+                    "_date": "7aa50e0d0f"
                 }
             ],
-            h.clean_history
+            [event for event in h.reconciled_history if event["_type"] in ("TempBasal",
+                                                                           "TempBasalDuration",
+                                                                           "PumpSuspend",
+                                                                           "PumpResume")]
         )
 
 

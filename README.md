@@ -25,19 +25,19 @@ optional arguments:
 
 ## Device mmhistorytools:
   vendor openapscontrib.mmhistorytools
-  
+
   mmhistorytools - tools for cleaning, condensing, and reformatting history data
-  
-      
+
+
 
   USAGE       Usage Details
-    cleanup   Removes inconsistencies from a sequence of pump history
+    clean   Removes inconsistencies from a sequence of pump history
 ```
 
 Use the command help menu to see available arguments.
 ```bash
-$ openaps use mmhistorytools cleanup -h
-usage: openaps-use mmhistorytools cleanup [-h] [--start START] [--end END]
+$ openaps use mmhistorytools clean -h
+usage: openaps-use mmhistorytools clean [-h] [--start START] [--end END]
                                           [infile]
 
 Removes inconsistencies from a sequence of pump history
