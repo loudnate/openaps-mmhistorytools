@@ -1,5 +1,7 @@
 """
 mmhistorytools - tools for cleaning, condensing, and reformatting history data
+
+
 """
 
 import argparse
@@ -68,7 +70,7 @@ Tasks performed by this pass:
         return params
 
     def configure_app(self, app, parser):
-        super(clean, self).get_epilog()
+        super(clean, self).configure_app(app, parser)
 
         parser.add_argument(
             '--start',
