@@ -4,6 +4,8 @@ from datetime import datetime
 from datetime import timedelta
 from dateutil import parser
 
+from .models import Bolus, Meal, TempBasal, Unit
+
 
 class ParseHistory(object):
     @staticmethod
@@ -124,7 +126,7 @@ class CleanHistory(ParseHistory):
 class ReconcileHistory(ParseHistory):
     """Analyze Medtronic pump history and reconciles dependencies between records
 
-    Responsibilities
+    Responsibilities:
     - Modifies temporary basal duration to account for cancelled and overlapping basals
     - Duplicates and modifies temporary basal records to account for delivery pauses when suspended
     """
@@ -224,3 +226,88 @@ class ReconcileHistory(ParseHistory):
         self._last_temp_basal_duration_event = event
 
         return [event]
+
+
+class ResolveHistory(ParseHistory):
+    """Converts Medtronic pump history to a general record type of bolus, meal, or temp basal
+
+    Each record is an extension of the namedtuple type `BaseRecord`:
+
+    - `Bolus`: Fast insulin delivery events in Units
+    - `Meal`: Grams of carbohydrate
+    - `TempBasal`: Paced insulin delivery events in Units/hour, or Percent of scheduled basal
+
+    The following history events are parsed:
+
+    - TempBasal and TempBasalDuration are combined into TempBasal records
+    - PumpSuspend and PumpResume are combined into TempBasal records of 0%
+    - Square Bolus is converted to a TempBasal record
+    - Normal Bolus is converted to a Bolus record
+    - BolusWizard carb entry is converted to a Meal record
+    - JournalEntryMealMarker is converted to a Meal record
+
+    Events that are not related to the record types or seem to have no effect are dropped.
+    """
+    def __init__(self, reconciled_history, current_datetime=None):
+        """Initializes a new instance of the history parser
+
+        The input history is expected to have no open-ended suspend windows, which can be resolved
+        by the CleanHistory class.
+
+        Impossible overlapping events (e.g. TempBasalDuration) should be reconciled using the
+        ReconcileHistory class.
+
+        If not provided, `current_datetime` will default to datetime.now(), which is assumed to be
+        a naive datetime in the same timezone as the pump. This is not a safe assumption to make
+        for most fresh Raspberry Pi setups.
+
+        :param reconciled_history: A list of pump history events in reverse-chronological order
+        :type reconciled_history: list(dict)
+        :param current_datetime: The datetime at which the history was generated
+        :type current_datetime: datetime
+        """
+        self.resolved_history = []
+        self.current_datetime = current_datetime or datetime.now()
+
+        for event in reconciled_history:
+            self.add_history_event(event)
+
+    def add_history_event(self, event):
+        try:
+            decoded = getattr(self, "_decode_{}".format(event["_type"].lower()))(event)
+        except AttributeError:
+            pass
+        else:
+            self.resolved_history.extend(decoded)
+
+    def _decode_bolus(self, event):
+        start_at = self._event_datetime(event)
+        delivered = event["amount"]
+
+        if event["type"] == "square":
+            duration = event["duration"]
+            programmed = event["programmed"]
+
+            # If less than 100% of the programmed dose was delivered and we're past the delivery
+            # window, then shorten the actual duration by the ratio of delivered insulin.
+            if start_at + timedelta(minutes=duration) < self.current_datetime:
+                duration = int(duration * delivered / programmed)
+
+            rate = delivered / (duration / 60.0)
+
+            return [TempBasal(
+                start_at=start_at,
+                end_at=start_at + timedelta(minutes=duration),
+                amount=rate,
+                unit=Unit.units_per_minute,
+                description='Square bolus: {}U over {}min'.format(delivered, duration)
+            )]
+
+        elif event["amount"] > 0:
+            return [Bolus(
+                start_at=start_at,
+                end_at=start_at,
+                amount=delivered,
+                unit=Unit.units,
+                description='Normal bolus: {}U'.format(delivered)
+            )]
