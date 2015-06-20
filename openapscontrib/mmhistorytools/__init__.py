@@ -11,7 +11,7 @@ import sys
 
 from openaps.uses.use import Use
 
-from historytools import CleanHistory, ReconcileHistory
+from historytools import CleanHistory, ReconcileHistory, ResolveHistory
 
 
 # set_config is needed by openaps for all vendors.
@@ -39,7 +39,7 @@ def display_device(device):
 def get_uses(device, config):
     # make an Example, openaps use command
     # add your Uses here!
-    return [clean, reconcile]
+    return [clean, reconcile, resolve]
 
 
 class BaseUse(Use):
@@ -104,5 +104,49 @@ Tasks performed by this pass:
         params = self.get_params(args)
 
         tool = ReconcileHistory(json.load(params.pop('infile')))
+
+        return tool.reconciled_history
+
+
+class resolve(BaseUse):
+    """Converts events in a sequence of pump history to a generalized record types
+
+Each record is a dictionary representing one of the following types, as denoted by the "type" key:
+- `Bolus`: Fast insulin delivery events in Units
+- `Meal`: Grams of carbohydrate
+- `TempBasal`: Paced insulin delivery events in Units/hour, or Percent of scheduled basal
+
+The following history events are parsed:
+
+- TempBasal and TempBasalDuration are combined into TempBasal records
+- PumpSuspend and PumpResume are combined into TempBasal records of 0%
+- Square Bolus is converted to a TempBasal record
+- Normal Bolus is converted to a Bolus record
+- BolusWizard carb entry is converted to a Meal record
+- JournalEntryMealMarker is converted to a Meal record
+
+Events that are not related to the record types or seem to have no effect are dropped.
+"""
+
+    def get_params(self, args):
+        params = super(resolve, self).get_params(args)
+        params.update(current_datetime=args.now)
+
+        return params
+
+    def configure_app(self, app, parser):
+        super(resolve, self).configure_app(app, parser)
+
+        parser.add_argument(
+            '--now',
+            type=dateparser.parse,
+            default=None,
+            help='The timestamp of when the history sequence was read'
+        )
+
+    def main(self, args, app):
+        params = self.get_params(args)
+
+        tool = ResolveHistory(json.load(params.pop('infile')), **params)
 
         return tool.reconciled_history

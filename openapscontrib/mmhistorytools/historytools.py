@@ -8,6 +8,8 @@ from .models import Bolus, Meal, TempBasal, Unit
 
 
 class ParseHistory(object):
+    DURATION_IN_MINUTES_KEY = "duration (min)"
+
     @staticmethod
     def _event_datetime(event):
         return parser.parse(event["timestamp"])
@@ -130,8 +132,6 @@ class ReconcileHistory(ParseHistory):
     - Modifies temporary basal duration to account for cancelled and overlapping basals
     - Duplicates and modifies temporary basal records to account for delivery pauses when suspended
     """
-    DURATION_IN_MINUTES_KEY = "duration (min)"
-
     def __init__(self, clean_history):
         """Initializes a new instance of the history parser
 
@@ -229,9 +229,9 @@ class ReconcileHistory(ParseHistory):
 
 
 class ResolveHistory(ParseHistory):
-    """Converts Medtronic pump history to a general record type of bolus, meal, or temp basal
+    """Converts Medtronic pump history to a sequence of general record types
 
-    Each record is an extension of the namedtuple type `BaseRecord`:
+    Each record is a dictionary representing one of the following types:
 
     - `Bolus`: Fast insulin delivery events in Units
     - `Meal`: Grams of carbohydrate
@@ -254,9 +254,6 @@ class ResolveHistory(ParseHistory):
         The input history is expected to have no open-ended suspend windows, which can be resolved
         by the CleanHistory class.
 
-        Impossible overlapping events (e.g. TempBasalDuration) should be reconciled using the
-        ReconcileHistory class.
-
         If not provided, `current_datetime` will default to datetime.now(), which is assumed to be
         a naive datetime in the same timezone as the pump. This is not a safe assumption to make
         for most fresh Raspberry Pi setups.
@@ -269,6 +266,10 @@ class ResolveHistory(ParseHistory):
         self.resolved_history = []
         self.current_datetime = current_datetime or datetime.now()
 
+        # Temporary parsing state
+        self._resume_datetime = None
+        self._temp_basal_duration = None
+
         for event in reconciled_history:
             self.add_history_event(event)
 
@@ -278,36 +279,95 @@ class ResolveHistory(ParseHistory):
         except AttributeError:
             pass
         else:
-            self.resolved_history.extend(decoded)
+            if decoded is not None:
+                self.resolved_history.append(decoded)
 
     def _decode_bolus(self, event):
         start_at = self._event_datetime(event)
         delivered = event["amount"]
+        programmed = event["programmed"]
 
-        if event["type"] == "square":
-            duration = event["duration"]
-            programmed = event["programmed"]
+        if max(delivered, programmed) > 0:
+            if event["type"] == "square":
+                duration = event["duration"]
 
-            # If less than 100% of the programmed dose was delivered and we're past the delivery
-            # window, then shorten the actual duration by the ratio of delivered insulin.
-            if start_at + timedelta(minutes=duration) < self.current_datetime:
-                duration = int(duration * delivered / programmed)
+                rate = programmed / (duration / 60.0)
 
-            rate = delivered / (duration / 60.0)
+                # If less than 100% of the programmed dose was delivered and we're past the delivery
+                # window, then shorten the actual duration by the ratio of delivered insulin.
+                if start_at + timedelta(minutes=duration) < self.current_datetime:
+                    duration = int(duration * delivered / programmed)
 
-            return [TempBasal(
-                start_at=start_at,
-                end_at=start_at + timedelta(minutes=duration),
-                amount=rate,
-                unit=Unit.units_per_minute,
-                description='Square bolus: {}U over {}min'.format(delivered, duration)
-            )]
+                return TempBasal(
+                    start_at=start_at,
+                    end_at=start_at + timedelta(minutes=duration),
+                    amount=rate,
+                    unit=Unit.units_per_hour,
+                    description="Square bolus: {}U over {}min".format(delivered, duration)
+                )
 
-        elif event["amount"] > 0:
-            return [Bolus(
+            else:
+                return Bolus(
+                    start_at=start_at,
+                    end_at=start_at,
+                    amount=delivered,
+                    unit=Unit.units,
+                    description="Normal bolus: {}U".format(delivered)
+                )
+
+    def _decode_boluswizard(self, event):
+        return self._decode_journalentrymealmarker(event)
+
+    def _decode_journalentrymealmarker(self, event):
+        carb_input = event["carb_input"]
+        start_at = self._event_datetime(event)
+
+        if carb_input:
+            return Meal(
                 start_at=start_at,
                 end_at=start_at,
-                amount=delivered,
-                unit=Unit.units,
-                description='Normal bolus: {}U'.format(delivered)
-            )]
+                amount=carb_input,
+                unit=Unit.grams,
+                description=event["_type"]
+            )
+
+    def _decode_pumpresume(self, event):
+        self._resume_datetime = self._event_datetime(event)
+
+    def _decode_pumpsuspend(self, event):
+        assert self._resume_datetime is not None, "Unbalanced Suspend/Resume events found"
+
+        start_at = self._event_datetime(event)
+        end_at = self._resume_datetime
+
+        self._resume_datetime = None
+
+        if end_at > start_at:
+            return TempBasal(
+                start_at=self._event_datetime(event),
+                end_at=end_at,
+                amount=0,
+                unit=Unit.percent_of_basal,
+                description="Pump Suspend"
+            )
+
+    def _decode_tempbasal(self, event):
+        assert self._temp_basal_duration is not None, "Temp basal duration not found"
+
+        start_at = self._event_datetime(event)
+        end_at = start_at + timedelta(minutes=self._temp_basal_duration)
+
+        if end_at > start_at:
+            amount = event["rate"]
+            unit = Unit.percent_of_basal if event["temp"] == "percent" else Unit.units_per_hour
+
+            return TempBasal(
+                start_at=start_at,
+                end_at=end_at,
+                amount=amount,
+                unit=unit,
+                description="TempBasal {} {}".format(amount, unit)
+            )
+
+    def _decode_tempbasalduration(self, event):
+        self._temp_basal_duration = event[self.DURATION_IN_MINUTES_KEY]

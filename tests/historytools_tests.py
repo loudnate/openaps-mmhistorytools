@@ -1,10 +1,12 @@
 from datetime import datetime
+from dateutil import parser
 import json
 import os
 import sys
 import unittest
 
-from openapscontrib.mmhistorytools.historytools import CleanHistory, ReconcileHistory
+from openapscontrib.mmhistorytools.historytools import CleanHistory, ReconcileHistory, ResolveHistory
+from openapscontrib.mmhistorytools.models import Bolus, Meal, TempBasal
 
 
 def get_file_at_path(path):
@@ -478,6 +480,189 @@ class ReconcileHistoryTestCase(unittest.TestCase):
                                                                            "PumpResume")]
         )
 
+
+class ResolveHistoryTestCase(unittest.TestCase):
+    def test_resolve(self):
+        with open(get_file_at_path("fixtures/temp_basal_cancel.json")) as fp:
+            pump_history = json.load(fp)
+
+        h = ResolveHistory(pump_history)
+
+        _ = parser.parse
+
+        self.assertListEqual(
+            [
+                Bolus(
+                    start_at=_("2015-06-06T20:46:06"),
+                    end_at=_("2015-06-06T20:46:06"),
+                    amount=3.9,
+                    unit="U",
+                    description="Normal bolus: 3.9U"
+                ),
+                Meal(
+                    start_at=_("2015-06-06T20:46:06"),
+                    end_at=_("2015-06-06T20:46:06"),
+                    amount=32,
+                    unit="g",
+                    description="BolusWizard"
+                ),
+                TempBasal(
+                    start_at=_("2015-06-06T20:39:45"),
+                    end_at=_("2015-06-06T21:09:45"),
+                    amount=150,
+                    unit="percent",
+                    description="TempBasal 150 percent"
+                ),
+                Bolus(
+                    start_at=_("2015-06-06T20:32:26"),
+                    end_at=_("2015-06-06T20:32:26"),
+                    amount=3.1,
+                    unit="U",
+                    description="Normal bolus: 3.1U"
+                ),
+                TempBasal(
+                    start_at=_("2015-06-06T19:05:17"),
+                    end_at=_("2015-06-06T20:05:17"),
+                    amount=200,
+                    unit="percent",
+                    description="TempBasal 200 percent"
+                ),
+                Meal(
+                    start_at=_("2015-06-06T18:10:28"),
+                    end_at=_("2015-06-06T18:10:28"),
+                    amount=29,
+                    unit="g",
+                    description="JournalEntryMealMarker"
+                ),
+                Meal(
+                    start_at=_("2015-06-06T17:55:00"),
+                    end_at=_("2015-06-06T17:55:00"),
+                    amount=37,
+                    unit="g",
+                    description="JournalEntryMealMarker"
+                ),
+                Bolus(
+                    start_at=_("2015-06-06T16:07:36"),
+                    end_at=_("2015-06-06T16:07:36"),
+                    amount=0.45,
+                    unit="U",
+                    description="Normal bolus: 0.45U"
+                ),
+                TempBasal(
+                    start_at=_("2015-06-06T16:07:52"),
+                    end_at=_("2015-06-06T16:24:58"),
+                    amount=0,
+                    unit="percent",
+                    description="Pump Suspend"
+                ),
+                Meal(
+                    start_at=_("2015-06-06T16:07:35"),
+                    end_at=_("2015-06-06T16:07:35"),
+                    amount=24,
+                    unit="g",
+                    description="BolusWizard"
+                ),
+                Bolus(
+                    start_at=_("2015-06-06T16:01:28"),
+                    end_at=_("2015-06-06T16:01:28"),
+                    amount=5.2,
+                    unit="U",
+                    description="Normal bolus: 5.2U"
+                ),
+                Meal(
+                    start_at=_("2015-06-06T16:01:28"),
+                    end_at=_("2015-06-06T16:01:28"),
+                    amount=42,
+                    unit="g",
+                    description="BolusWizard"
+                ),
+                Bolus(
+                    start_at=_("2015-06-06T15:00:24"),
+                    end_at=_("2015-06-06T15:00:24"),
+                    amount=3.2,
+                    unit="U",
+                    description="Normal bolus: 3.2U"
+                )
+            ],
+            h.resolved_history
+        )
+
+    def test_square_bolus_in_progress(self):
+        with open(get_file_at_path("fixtures/square_bolus.json")) as fp:
+            pump_history = json.load(fp)
+
+        h = ResolveHistory(pump_history, current_datetime=datetime(2015, 6, 19, 23, 10))
+
+        _ = parser.parse
+
+        self.assertListEqual(
+            [
+                Bolus(
+                    start_at=_("2015-06-19T23:04:25"),
+                    end_at=_("2015-06-19T23:04:25"),
+                    amount=1.6,
+                    unit="U",
+                    description="Normal bolus: 1.6U"
+                ),
+                Meal(
+                    start_at=_("2015-06-19T23:04:25"),
+                    end_at=_("2015-06-19T23:04:25"),
+                    amount=27,
+                    unit="g",
+                    description="BolusWizard"
+                ),
+                Bolus(
+                    start_at=_("2015-06-19T21:31:15"),
+                    end_at=_("2015-06-19T21:31:15"),
+                    amount=2.5,
+                    unit="U",
+                    description="Normal bolus: 2.5U"
+                ),
+                TempBasal(
+                    start_at=_("2015-06-19T21:32:55"),
+                    end_at=_("2015-06-20T00:02:55"),
+                    amount=1.4,
+                    unit="U/hour",
+                    description="Square bolus: 2.15U over 150min"
+                ),
+                Meal(
+                    start_at=_("2015-06-19T21:31:15"),
+                    end_at=_("2015-06-19T21:31:15"),
+                    amount=56,
+                    unit="g",
+                    description="BolusWizard"
+                ),
+                Bolus(
+                    start_at=_("2015-06-19T21:02:39"),
+                    end_at=_("2015-06-19T21:02:39"),
+                    amount=2.0,
+                    unit="U",
+                    description="Normal bolus: 2.0U"
+                )
+            ],
+            h.resolved_history
+        )
+
+    def test_square_bolus_cancelled(self):
+        with open(get_file_at_path("fixtures/square_bolus.json")) as fp:
+            pump_history = json.load(fp)
+
+        h = ResolveHistory(pump_history, current_datetime=datetime(2015, 6, 20, 23, 10))
+
+        _ = parser.parse
+
+        self.assertListEqual(
+            [
+                TempBasal(
+                    start_at=_("2015-06-19T21:32:55"),
+                    end_at=_("2015-06-19T23:04:55"),
+                    amount=1.4,
+                    unit="U/hour",
+                    description="Square bolus: 2.15U over 92min"
+                )
+            ],
+            [r for r in h.resolved_history if r["type"] == "TempBasal"]
+        )
 
 if __name__ == "__main__":
     unittest.main()
