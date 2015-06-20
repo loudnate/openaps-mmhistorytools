@@ -109,7 +109,7 @@ Tasks performed by this pass:
 
 
 class resolve(BaseUse):
-    """Converts events in a sequence of pump history to a generalized record types
+    """Converts events in a sequence of pump history to generalized record types
 
 Each record is a dictionary representing one of the following types, as denoted by the "type" key:
 - `Bolus`: Fast insulin delivery events in Units
@@ -149,4 +149,4 @@ Events that are not related to the record types or seem to have no effect are dr
 
         tool = ResolveHistory(json.load(params.pop('infile')), **params)
 
-        return tool.reconciled_history
+        return tool.resolved_history
