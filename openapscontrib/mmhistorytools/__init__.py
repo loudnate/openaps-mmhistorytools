@@ -112,7 +112,7 @@ class resolve(BaseUse):
     """Converts events in a sequence of pump history to generalized record types
 
 Each record is a dictionary representing one of the following types, as denoted by the "type" key:
-- `Bolus`: Fast insulin delivery events in Units
+- `Bolus`: Insulin delivery events in Units, or Units/hour
 - `Meal`: Grams of carbohydrate
 - `TempBasal`: Paced insulin delivery events in Units/hour, or Percent of scheduled basal
 
@@ -120,7 +120,7 @@ The following history events are parsed:
 
 - TempBasal and TempBasalDuration are combined into TempBasal records
 - PumpSuspend and PumpResume are combined into TempBasal records of 0%
-- Square Bolus is converted to a TempBasal record
+- Square Bolus is converted to a Bolus record
 - Normal Bolus is converted to a Bolus record
 - BolusWizard carb entry is converted to a Meal record
 - JournalEntryMealMarker is converted to a Meal record

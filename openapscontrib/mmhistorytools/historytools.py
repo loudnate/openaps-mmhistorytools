@@ -233,7 +233,7 @@ class ResolveHistory(ParseHistory):
 
     Each record is a dictionary representing one of the following types:
 
-    - `Bolus`: Fast insulin delivery events in Units
+    - `Bolus`: Insulin delivery events in Units, or Units/hour
     - `Meal`: Grams of carbohydrate
     - `TempBasal`: Paced insulin delivery events in Units/hour, or Percent of scheduled basal
 
@@ -241,7 +241,7 @@ class ResolveHistory(ParseHistory):
 
     - TempBasal and TempBasalDuration are combined into TempBasal records
     - PumpSuspend and PumpResume are combined into TempBasal records of 0%
-    - Square Bolus is converted to a TempBasal record
+    - Square Bolus is converted to a Bolus record
     - Normal Bolus is converted to a Bolus record
     - BolusWizard carb entry is converted to a Meal record
     - JournalEntryMealMarker is converted to a Meal record
@@ -297,13 +297,14 @@ class ResolveHistory(ParseHistory):
                 # window, then shorten the actual duration by the ratio of delivered insulin.
                 if start_at + timedelta(minutes=duration) < self.current_datetime:
                     duration = int(duration * delivered / programmed)
+                    programmed = delivered
 
-                return TempBasal(
+                return Bolus(
                     start_at=start_at,
                     end_at=start_at + timedelta(minutes=duration),
                     amount=rate,
                     unit=Unit.units_per_hour,
-                    description="Square bolus: {}U over {}min".format(delivered, duration)
+                    description="Square bolus: {}U over {}min".format(programmed, duration)
                 )
 
             else:
