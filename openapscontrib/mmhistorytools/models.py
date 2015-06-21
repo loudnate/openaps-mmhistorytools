@@ -19,8 +19,8 @@ class BaseRecord(dict):
         """
         kwargs = {
             "type": self.__class__.__name__,
-            "start_at": start_at,
-            "end_at": end_at,
+            "start_at": start_at.isoformat(),
+            "end_at": end_at.isoformat(),
             "amount": amount,
             "unit": unit,
             "description": description

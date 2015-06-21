@@ -312,7 +312,7 @@ class ResolveHistory(ParseHistory):
                     end_at=start_at,
                     amount=delivered,
                     unit=Unit.units,
-                    description="Normal bolus: {}U".format(delivered)
+                    description="Normal bolus: {}U".format(programmed)
                 )
 
     def _decode_boluswizard(self, event):
@@ -401,10 +401,16 @@ class NormalizeRecords(object):
         self.normalized_records = []
 
         self.basal_schedule = basal_schedule
-        self.zero_datetime = zero_datetime
 
         for event in resolved_records:
             self.add_history_event(event)
+
+        if zero_datetime is not None:
+            for event in self.normalized_records:
+                for key in [key for key in event.iterkeys() if key.endswith("_at")]:
+                    event[key] = int(round((
+                        parser.parse(event[key]) - zero_datetime
+                    ).total_seconds() / 60))
 
     def add_history_event(self, event):
         try:
@@ -412,7 +418,7 @@ class NormalizeRecords(object):
         except AttributeError:
             decoded = [event]
 
-        self.normalized_records.append(decoded or [])
+        self.normalized_records.extend(decoded or [])
 
     def basal_rates_in_range(self, start_time, end_time):
         """Returns a list of the current basal rates effective between the specified times
@@ -502,7 +508,7 @@ class NormalizeRecords(object):
                     t0 = datetime.combine(start_datetime.date(), basal_start_time)
                 else:
                     t0 = datetime.combine(end_datetime.date(), basal_start_time)
-                temp_basal_events[-1]["end_at"] = t0
+                temp_basal_events[-1]["end_at"] = t0.isoformat()
             else:
                 t0 = start_datetime
 
@@ -516,7 +522,7 @@ class NormalizeRecords(object):
 
                 amount = rate - basal_rate["rate"]
 
-                temp_basal_events.append(TempBasal(
+                temp_basal_events.insert(0, TempBasal(
                     start_at=t0,
                     end_at=t1,
                     amount=amount,
@@ -526,29 +532,19 @@ class NormalizeRecords(object):
 
         return temp_basal_events
 
-    def _relative_time(self, timestamp):
-        return int(round((timestamp - self.zero_datetime).total_seconds() / 60))
-
     def _decode_tempbasal(self, event):
         if self.basal_schedule is not None:
-            start_datetime = event["start_at"]
-            end_datetime = start_datetime + timedelta(minutes=self._temp_basal_duration)
-            t0 = self._relative_time(start_datetime)
-            t1 = self._relative_time(end_datetime)
-            self._temp_basal_duration = None
+            start_datetime = parser.parse(event["start_at"])
+            end_datetime = parser.parse(event["end_at"])
 
-            # Since only one tempbasal runs at a time, we may have to revise the last one we entered
-            if self._last_temp_basal_event is not None and self._last_temp_basal_event[T0] < t1:
-                t1 = self._last_temp_basal_event[T0]
-                end_datetime = start_datetime + timedelta(minutes=t1 - t0)
+            if end_datetime - start_datetime > timedelta(minutes=0):
+                adjustment = "percent" if event["unit"] == Unit.percent_of_basal else "absolute"
 
-            if t1 - t0 > 0 and event["rate"] > 0:
                 events = self._basal_adjustments_in_range(
-                    start_datetime, end_datetime, **{event["temp"]: event["rate"]}
+                    start_datetime,
+                    end_datetime,
+                    description=event["description"],
+                    **{adjustment: event["amount"]}
                 )
 
-                self._last_temp_basal_event = events[0]
-
                 return events
-            else:
-                self._last_temp_basal_event = {T0: t0, T1: t1}

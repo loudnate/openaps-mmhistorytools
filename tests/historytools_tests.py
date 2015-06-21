@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from datetime import time
 from dateutil import parser
 import json
@@ -557,7 +557,7 @@ class ResolveHistoryTestCase(unittest.TestCase):
                     end_at=_("2015-06-06T16:07:36"),
                     amount=0.45,
                     unit="U",
-                    description="Normal bolus: 0.45U"
+                    description="Normal bolus: 3.0U"
                 ),
                 TempBasal(
                     start_at=_("2015-06-06T16:07:52"),
@@ -812,7 +812,54 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
 
         self.assertListEqual(
             [
-
+                {
+                    "type": "Meal",
+                    "start_at": -11,
+                    "end_at": -11,
+                    "amount": 10,
+                    "unit": "g",
+                    "description": "BolusWizard"
+                },
+                {
+                    "type": "Bolus",
+                    "start_at": -13,
+                    "end_at": -13,
+                    "amount": 2.0,
+                    "unit": "U",
+                    "description": "Normal bolus: 2.0U"
+                },
+                {
+                    "type": "Meal",
+                    "start_at": -13,
+                    "end_at": -13,
+                    "amount": 30,
+                    "unit": "g",
+                    "description": "BolusWizard"
+                },
+                {
+                    "type": "Bolus",
+                    "start_at": -23,
+                    "end_at": -23,
+                    "amount": 0.6,
+                    "unit": "U",
+                    "description": "Normal bolus: 0.6U"
+                },
+                {
+                    "type": "Meal",
+                    "start_at": -23,
+                    "end_at": -23,
+                    "amount": 65,
+                    "unit": "g",
+                    "description": "BolusWizard"
+                },
+                {
+                    "type": "Bolus",
+                    "start_at": -167,
+                    "end_at": -167,
+                    "amount": 2.0,
+                    "unit": "U",
+                    "description": "Normal bolus: 2.0U"
+                }
             ],
             records
         )
@@ -874,12 +921,15 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
             pump_history = json.load(fp)
 
         zero_datetime = parser.parse("2015-06-13T15:37:58")
+        start_datetime = zero_datetime - timedelta(hours=4)
+        end_datetime = zero_datetime + timedelta(hours=4)
 
         records = NormalizeRecords(
             ResolveHistory(
                 ReconcileHistory(
                     CleanHistory(
-                        pump_history
+                        pump_history,
+                        start_datetime=start_datetime
                     ).clean_history
                 ).reconciled_history,
                 current_datetime=zero_datetime
@@ -890,7 +940,70 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
 
         self.assertListEqual(
             [
-
+                {
+                    "type": "Bolus",
+                    "start_at": -23,
+                    "end_at": -23,
+                    "amount": 3.0,
+                    "unit": "U",
+                    "description": "Normal bolus: 3.0U"
+                },
+                {
+                    "type": "Meal",
+                    "start_at": -23,
+                    "end_at": -23,
+                    "amount": 38,
+                    "unit": "g",
+                    "description": "BolusWizard"
+                },
+                {
+                    "type": "TempBasal",
+                    "start_at": -38,
+                    "end_at": -1,
+                    "amount": 0.96 - 0.8,
+                    "unit": "U/hour",
+                    "description": "TempBasal 120 percent"
+                },
+                {
+                    "type": "TempBasal",
+                    "start_at": -38,
+                    "end_at": -38,
+                    "amount": -0.80,
+                    "unit": "U/hour",
+                    "description": "Pump Suspend"
+                },
+                {
+                    "type": "TempBasal",
+                    "start_at": -44,
+                    "end_at": -38,
+                    "amount": -0.75,
+                    "unit": "U/hour",
+                    "description": "Pump Suspend"
+                },
+                {
+                    "type": "TempBasal",
+                    "start_at": -60,
+                    "end_at": -44,
+                    "amount": 0.9 - 0.75,
+                    "unit": "U/hour",
+                    "description": "TempBasal 120 percent"
+                },
+                {
+                    "type": "Bolus",
+                    "start_at": -118,
+                    "end_at": -118,
+                    "amount": 1.4,
+                    "unit": "U",
+                    "description": "Normal bolus: 1.4U"
+                },
+                {
+                    "type": "Bolus",
+                    "start_at": -149,
+                    "end_at": -149,
+                    "amount": 3.55,
+                    "unit": "U",
+                    "description": "Normal bolus: 4.0U"
+                }
             ],
             records
         )
