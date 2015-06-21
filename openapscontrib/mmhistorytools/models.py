@@ -15,7 +15,7 @@ class BaseRecord(dict):
         :param unit: The unit describing `amount`
         :type unit: str
         :param description: A human summary of the record
-        :type description: str
+        :type description: basestring
         """
         kwargs = {
             "type": self.__class__.__name__,

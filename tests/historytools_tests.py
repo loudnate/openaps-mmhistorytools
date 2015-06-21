@@ -1,11 +1,15 @@
 from datetime import datetime
+from datetime import time
 from dateutil import parser
 import json
 import os
 import sys
 import unittest
 
-from openapscontrib.mmhistorytools.historytools import CleanHistory, ReconcileHistory, ResolveHistory
+from openapscontrib.mmhistorytools.historytools import CleanHistory
+from openapscontrib.mmhistorytools.historytools import NormalizeRecords
+from openapscontrib.mmhistorytools.historytools import ReconcileHistory
+from openapscontrib.mmhistorytools.historytools import ResolveHistory
 from openapscontrib.mmhistorytools.models import Bolus, Meal, TempBasal
 
 
@@ -76,7 +80,8 @@ class CleanHistoryTestCase(unittest.TestCase):
                     "appended": [
                         {
                             "_type": "UnabsorbedInsulinBolus",
-                            "_description": "UnabsorbedInsulinBolus unknown head[35], body[0] op[0x5c]",
+                            "_description": "UnabsorbedInsulinBolus unknown head[35], body[0] "
+                                            "op[0x5c]",
                             "data": [
                                 {
                                     "amount": 2.0,
@@ -124,7 +129,8 @@ class CleanHistoryTestCase(unittest.TestCase):
                                 }
                             ],
                             "_body": "",
-                            "_head": "5c23509204103c14104614105014105a14106414106e14107814108214128c14ae9614",
+                            "_head": "5c23509204103c14104614105014105a141"
+                                     "06414106e14107814108214128c14ae9614",
                             "_date": ""
                         }
                     ],
@@ -341,7 +347,8 @@ class ReconcileHistoryTestCase(unittest.TestCase):
                 {
                     "_type": "TempBasalDuration",
                     "duration (min)": 0,
-                    "_description": "TempBasalDuration 2015-06-06T20:50:15 head[2], body[0] op[0x16]",
+                    "_description": "TempBasalDuration 2015-06-06T20:50:15 head[2], body[0] "
+                                    "op[0x16]",
                     "date": 1433620215000.0,
                     "timestamp": "2015-06-06T20:50:15",
                     "_body": "",
@@ -362,7 +369,8 @@ class ReconcileHistoryTestCase(unittest.TestCase):
                 {
                     "_type": "TempBasalDuration",
                     "duration (min)": 10,
-                    "_description": "TempBasalDuration 2015-06-06T20:39:45 head[2], body[0] op[0x16]",
+                    "_description": "TempBasalDuration 2015-06-06T20:39:45 head[2], body[0] "
+                                    "op[0x16]",
                     "date": 1433619585000.0,
                     "timestamp": "2015-06-06T20:39:45",
                     "_body": "",
@@ -383,7 +391,8 @@ class ReconcileHistoryTestCase(unittest.TestCase):
                 {
                     "_type": "TempBasalDuration",
                     "duration (min)": 60,
-                    "_description": "TempBasalDuration 2015-06-06T19:05:17 head[2], body[0] op[0x16]",
+                    "_description": "TempBasalDuration 2015-06-06T19:05:17 head[2], body[0] "
+                                    "op[0x16]",
                     "date": 1433613917000.0,
                     "timestamp": "2015-06-06T19:05:17",
                     "_body": "",
@@ -416,7 +425,8 @@ class ReconcileHistoryTestCase(unittest.TestCase):
                 {
                     "_type": "TempBasalDuration",
                     "duration (min)": 37,
-                    "_description": "TempBasalDuration generated due to interleaved PumpSuspend event",
+                    "_description": "TempBasalDuration generated due to interleaved PumpSuspend "
+                                    "event",
                     "date": 1434204002000.0,
                     "timestamp": "2015-06-13T15:00:02",
                     "_body": "",
@@ -455,7 +465,8 @@ class ReconcileHistoryTestCase(unittest.TestCase):
                 {
                     "_type": "TempBasalDuration",
                     "duration (min)": 16,
-                    "_description": "TempBasalDuration 2015-06-13T14:37:58 head[2], body[0] op[0x16]",
+                    "_description": "TempBasalDuration 2015-06-13T14:37:58 head[2], body[0] "
+                                    "op[0x16]",
                     "date": 1434202678000.0,
                     "timestamp": "2015-06-13T14:37:58",
                     "_body": "",
@@ -584,7 +595,7 @@ class ResolveHistoryTestCase(unittest.TestCase):
                     description="Normal bolus: 3.2U"
                 )
             ],
-            h.resolved_history
+            h.resolved_records
         )
 
     def test_square_bolus_in_progress(self):
@@ -640,7 +651,7 @@ class ResolveHistoryTestCase(unittest.TestCase):
                     description="Normal bolus: 2.0U"
                 )
             ],
-            h.resolved_history
+            h.resolved_records
         )
 
     def test_square_bolus_cancelled(self):
@@ -661,7 +672,227 @@ class ResolveHistoryTestCase(unittest.TestCase):
                     description="Square bolus: 2.15U over 92min"
                 )
             ],
-            [r for r in h.resolved_history if r["type"] == "TempBasal"]
+            [r for r in h.resolved_records if r["type"] == "TempBasal"]
+        )
+
+
+class BasalScheduleTestCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        with open(get_file_at_path("fixtures/basal.json")) as fp:
+            cls.basal_rate_schedule = json.load(fp)
+
+
+class NormalizeRecordsTestCase(BasalScheduleTestCase):
+    def test_basal_rates_in_range(self):
+        h = NormalizeRecords([], self.basal_rate_schedule)
+
+        self.assertListEqual(
+            self.basal_rate_schedule,
+            h.basal_rates_in_range(time(0, 0), time(23, 59))
+        )
+
+        self.assertListEqual(
+            self.basal_rate_schedule[0:1],
+            h.basal_rates_in_range(time(0, 0), time(1, 0))
+        )
+
+        self.assertListEqual(
+            self.basal_rate_schedule[1:3],
+            h.basal_rates_in_range(time(4, 0), time(9, 0))
+        )
+
+        self.assertListEqual(
+            self.basal_rate_schedule[5:6],
+            h.basal_rates_in_range(time(16, 0), time(20))
+        )
+
+        with self.assertRaises(AssertionError):
+            h.basal_rates_in_range(time(4), time(4))
+
+        with self.assertRaises(AssertionError):
+            h.basal_rates_in_range(time(4), time(3))
+
+    def test_basal_adjustments_in_range(self):
+        h = NormalizeRecords(
+            [],
+            self.basal_rate_schedule,
+            zero_datetime=datetime(2015, 01, 01, 12)
+        )
+
+        with self.assertRaises(AssertionError):
+            h._basal_adjustments_in_range(
+                datetime(2015, 01, 02),
+                datetime(2015, 01, 01),
+                percent=100
+            )
+
+        with self.assertRaises(AssertionError):
+            h._basal_adjustments_in_range(
+                datetime(2015, 01, 01),
+                datetime(2015, 01, 02, 4),
+                percent=100
+            )
+
+        with self.assertRaises(AssertionError):
+            h._basal_adjustments_in_range(datetime(2015, 01, 01), datetime(2015, 01, 01, 4))
+
+        basal = TempBasal(
+            start_at=datetime(2015, 01, 01, 05),
+            end_at=datetime(2015, 01, 01, 06),
+            amount=0.925,
+            unit="U/hour",
+            description="Testing"
+        )
+
+        self.assertDictEqual(
+            basal,
+            h._basal_adjustments_in_range(
+                datetime(2015, 01, 01, 05),
+                datetime(2015, 01, 01, 06),
+                percent=200,
+                description="Testing"
+            )[0]
+        )
+
+        self.assertDictEqual(
+            basal,
+            h._basal_adjustments_in_range(
+                datetime(2015, 01, 01, 05),
+                datetime(2015, 01, 01, 06),
+                absolute=1.85,
+                description="Testing"
+            )[0]
+        )
+
+        self.assertListEqual(
+            [
+                TempBasal(
+                    start_at=datetime(2015, 01, 01, 23),
+                    end_at=datetime(2015, 01, 01, 23, 59, 59),
+                    amount=-0.45,
+                    unit="U/hour",
+                    description=""
+                ),
+                TempBasal(
+                    start_at=datetime(2015, 01, 02),
+                    end_at=datetime(2015, 01, 02, 02),
+                    amount=-0.45,
+                    unit="U/hour",
+                    description=""
+                )
+            ],
+            h._basal_adjustments_in_range(
+                datetime(2015, 01, 01, 23),
+                datetime(2015, 01, 02, 02),
+                percent=50
+            )
+        )
+
+
+class MungeFixturesTestCase(BasalScheduleTestCase):
+    def test_bolus_wizard_duplicates(self):
+        with open(get_file_at_path("fixtures/bolus_wizard_duplicates.json")) as fp:
+            pump_history = json.load(fp)
+
+        zero_datetime = parser.parse("2015-06-05T19:08:00")
+
+        records = NormalizeRecords(
+            ResolveHistory(
+                ReconcileHistory(
+                    CleanHistory(
+                        pump_history
+                    ).clean_history
+                ).reconciled_history,
+                current_datetime=zero_datetime
+            ).resolved_records,
+            basal_schedule=self.basal_rate_schedule,
+            zero_datetime=zero_datetime
+        ).normalized_records
+
+        self.assertListEqual(
+            [
+
+            ],
+            records
+        )
+
+    def test_square_bolus(self):
+        with open(get_file_at_path("fixtures/square_bolus.json")) as fp:
+            pump_history = json.load(fp)
+
+        zero_datetime = parser.parse("2015-06-19T23:04:25")
+
+        records = NormalizeRecords(
+            ResolveHistory(
+                ReconcileHistory(
+                    CleanHistory(
+                        pump_history
+                    ).clean_history
+                ).reconciled_history,
+                current_datetime=zero_datetime
+            ).resolved_records,
+            basal_schedule=self.basal_rate_schedule,
+            zero_datetime=zero_datetime
+        ).normalized_records
+
+        self.assertListEqual(
+            [
+
+            ],
+            records
+        )
+
+    def test_temp_basal_cancel(self):
+        with open(get_file_at_path("fixtures/temp_basal_cancel.json")) as fp:
+            pump_history = json.load(fp)
+
+        zero_datetime = parser.parse("2015-06-06T20:50:15")
+
+        records = NormalizeRecords(
+            ResolveHistory(
+                ReconcileHistory(
+                    CleanHistory(
+                        pump_history
+                    ).clean_history
+                ).reconciled_history,
+                current_datetime=zero_datetime
+            ).resolved_records,
+            basal_schedule=self.basal_rate_schedule,
+            zero_datetime=zero_datetime
+        ).normalized_records
+
+        self.assertListEqual(
+            [
+
+            ],
+            records
+        )
+
+    def test_temp_basal_suspend(self):
+        with open(get_file_at_path("fixtures/temp_basal_suspend.json")) as fp:
+            pump_history = json.load(fp)
+
+        zero_datetime = parser.parse("2015-06-13T15:37:58")
+
+        records = NormalizeRecords(
+            ResolveHistory(
+                ReconcileHistory(
+                    CleanHistory(
+                        pump_history
+                    ).clean_history
+                ).reconciled_history,
+                current_datetime=zero_datetime
+            ).resolved_records,
+            basal_schedule=self.basal_rate_schedule,
+            zero_datetime=zero_datetime
+        ).normalized_records
+
+        self.assertListEqual(
+            [
+
+            ],
+            records
         )
 
 if __name__ == "__main__":

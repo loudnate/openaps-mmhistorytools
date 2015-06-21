@@ -149,4 +149,4 @@ Events that are not related to the record types or seem to have no effect are dr
 
         tool = ResolveHistory(json.load(params.pop('infile')), **params)
 
-        return tool.resolved_history
+        return tool.resolved_records
