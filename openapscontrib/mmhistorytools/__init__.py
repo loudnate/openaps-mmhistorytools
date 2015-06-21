@@ -11,7 +11,7 @@ import sys
 
 from openaps.uses.use import Use
 
-from historytools import CleanHistory, ReconcileHistory, ResolveHistory
+from historytools import CleanHistory, ReconcileHistory, ResolveHistory, NormalizeRecords
 
 
 # set_config is needed by openaps for all vendors.
@@ -39,7 +39,7 @@ def display_device(device):
 def get_uses(device, config):
     # make an Example, openaps use command
     # add your Uses here!
-    return [clean, reconcile, resolve]
+    return [clean, reconcile, resolve, normalize]
 
 
 class BaseUse(Use):
@@ -150,3 +150,46 @@ Events that are not related to the record types or seem to have no effect are dr
         tool = ResolveHistory(json.load(params.pop('infile')), **params)
 
         return tool.resolved_records
+
+
+class normalize(BaseUse):
+    """Adjusts the time and amount of records relative to a basal schedule and a timestamp
+
+If `--basal-profile` is provided, the TempBasal `amount` is replaced with a relative dose in
+Units/hour. A single TempBasal record might split into multiple records to account for boundary
+crossings in the basal schedule.
+
+If `--zero-at` is provided, the values for the `start_at` and `end_at` keys are replaced with signed
+integers representing the number of minutes from `--zero-at`.
+"""
+
+    def get_params(self, args):
+        params = super(normalize, self).get_params(args)
+        params.update(basal_schedule=args.basal_profile, zero_datetime=args.zero_at)
+
+        return params
+
+    def configure_app(self, app, parser):
+        super(normalize, self).configure_app(app, parser)
+
+        parser.add_argument(
+            '--basal-profile',
+            type=argparse.FileType('r'),
+            default=None,
+            help='A basal profile by which to adjust TempBasal records'
+        )
+
+        parser.add_argument(
+            '--zero-at',
+            type=dateparser.parse,
+            default=None,
+            help='The timestamp by which to adjust record timestamps'
+        )
+
+    def main(self, args, app):
+        params = self.get_params(args)
+
+        tool = NormalizeRecords(json.load(params.pop('infile')), **params)
+
+        return tool.normalized_records
+
