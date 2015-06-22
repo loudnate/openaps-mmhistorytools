@@ -39,7 +39,7 @@ def display_device(device):
 def get_uses(device, config):
     # make an Example, openaps use command
     # add your Uses here!
-    return [clean, reconcile, resolve, normalize]
+    return [clean, normalize, reconcile, resolve]
 
 
 class BaseUse(Use):
@@ -49,6 +49,7 @@ class BaseUse(Use):
     def configure_app(self, app, parser):
         parser.add_argument(
             'infile',
+            nargs='?',
             type=argparse.FileType('r'),
             default=sys.stdin,
             help='JSON-encoded history data'
@@ -115,16 +116,13 @@ Each record is a dictionary representing one of the following types, as denoted 
 - `Bolus`: Insulin delivery events in Units, or Units/hour
 - `Meal`: Grams of carbohydrate
 - `TempBasal`: Paced insulin delivery events in Units/hour, or Percent of scheduled basal
-
 The following history events are parsed:
-
 - TempBasal and TempBasalDuration are combined into TempBasal records
 - PumpSuspend and PumpResume are combined into TempBasal records of 0%
 - Square Bolus is converted to a Bolus record
 - Normal Bolus is converted to a Bolus record
 - BolusWizard carb entry is converted to a Meal record
 - JournalEntryMealMarker is converted to a Meal record
-
 Events that are not related to the record types or seem to have no effect are dropped.
 """
 
@@ -158,7 +156,6 @@ class normalize(BaseUse):
 If `--basal-profile` is provided, the TempBasal `amount` is replaced with a relative dose in
 Units/hour. A single TempBasal record might split into multiple records to account for boundary
 crossings in the basal schedule.
-
 If `--zero-at` is provided, the values for the `start_at` and `end_at` keys are replaced with signed
 integers representing the number of minutes from `--zero-at`.
 """
@@ -176,7 +173,7 @@ integers representing the number of minutes from `--zero-at`.
             '--basal-profile',
             type=argparse.FileType('r'),
             default=None,
-            help='A basal profile by which to adjust TempBasal records'
+            help='A file containing a basal profile by which to adjust TempBasal records'
         )
 
         parser.add_argument(
@@ -189,7 +186,15 @@ integers representing the number of minutes from `--zero-at`.
     def main(self, args, app):
         params = self.get_params(args)
 
-        tool = NormalizeRecords(json.load(params.pop('infile')), **params)
+        basal_schedule = params.pop('basal_schedule')
+        if basal_schedule is not None:
+            basal_schedule = json.load(basal_schedule)
+
+        tool = NormalizeRecords(
+            json.load(params.pop('infile')),
+            basal_schedule=basal_schedule,
+            **params
+        )
 
         return tool.normalized_records
 
