@@ -2,6 +2,12 @@
 An [openaps](https://github.com/openaps/openaps) plugin for cleaning, condensing, and reformatting medtronic history data
 
 ## Getting started
+### Installing from pypi
+
+```bash
+sudo easy_install openapscontrib.mmhistorytools
+```
+
 ### Installing from source for development
 Clone the repository and link via setuptools:
 ```bash
@@ -25,12 +31,12 @@ optional arguments:
 
 ## Device mmhistorytools:
   vendor openapscontrib.mmhistorytools
-  
+
   mmhistorytools - tools for cleaning, condensing, and reformatting history data
-  
-  
-  
-      
+
+
+
+
 
   USAGE       Usage Details
     clean     Resolve inconsistencies from a sequence of pump history
