@@ -8,9 +8,11 @@ reformatting history data.
 
 requires = ['openaps', 'python-dateutil']
 
+exec(open('openapscontrib/mmhistorytools/version.py').read())
+
 setup(
     name='openapscontrib.mmhistorytools',
-    version='0.0.1',
+    version=__version__,
     url='http://github.com/loudnate/openaps-mmhistorytools',
     download_url='http://pypi.python.org/pypi/openapscontrib.mmhistorytools',
     license='MIT',

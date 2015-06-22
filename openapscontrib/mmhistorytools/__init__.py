@@ -3,6 +3,7 @@ mmhistorytools - tools for cleaning, condensing, and reformatting history data
 
 
 """
+from .version import __version__
 
 import argparse
 from dateutil import parser as dateparser
