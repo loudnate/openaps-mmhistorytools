@@ -8,6 +8,7 @@ reformatting history data.
 
 requires = ['openaps', 'python-dateutil']
 
+__version__ = None
 exec(open('openapscontrib/mmhistorytools/version.py').read())
 
 setup(
