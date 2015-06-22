@@ -39,7 +39,7 @@ def display_device(device):
 def get_uses(device, config):
     # make an Example, openaps use command
     # add your Uses here!
-    return [clean, normalize, reconcile, resolve]
+    return [clean, reconcile, resolve, normalize]
 
 
 class BaseUse(Use):

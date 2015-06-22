@@ -40,13 +40,13 @@ optional arguments:
 
   USAGE       Usage Details
     clean     Resolve inconsistencies from a sequence of pump history
-    normalize
-              Adjusts the time and amount of records relative to a basal
-              schedule and a timestamp
     reconcile
               Reconcile record dependencies from a sequence of pump history
     resolve   Converts events in a sequence of pump history to generalized
               record types
+    normalize
+              Adjusts the time and amount of records relative to a basal
+              schedule and a timestamp
 ```
 
 Use the command help menu to see available arguments.
