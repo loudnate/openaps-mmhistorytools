@@ -10,8 +10,9 @@ requires = ['openaps', 'python-dateutil']
 
 setup(
     name='openapscontrib.mmhistorytools',
-    version='0.0.0',
+    version='0.0.1',
     url='http://github.com/loudate/openaps-mmhistorytools',
+    download_url='http://pypi.python.org/pypi/openapscontrib.mmhistorytools',
     license='MIT',
     author='Nathan Racklyeft',
     author_email='loudnate+pypi@gmail.com',
@@ -26,7 +27,7 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Topic :: Documentation',
         'Topic :: Utilities',
-        ],
+    ],
     platforms='any',
     packages=find_packages(exclude=['tests']),
     include_package_data=True,
