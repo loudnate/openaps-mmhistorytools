@@ -15,12 +15,12 @@ class BaseRecord(dict):
         :param unit: The unit describing `amount`
         :type unit: str
         :param description: A human summary of the record
-        :type description: str
+        :type description: basestring
         """
         kwargs = {
             "type": self.__class__.__name__,
-            "start_at": start_at,
-            "end_at": end_at,
+            "start_at": start_at.isoformat(),
+            "end_at": end_at.isoformat(),
             "amount": amount,
             "unit": unit,
             "description": description

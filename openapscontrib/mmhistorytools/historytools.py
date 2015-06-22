@@ -233,7 +233,7 @@ class ResolveHistory(ParseHistory):
 
     Each record is a dictionary representing one of the following types:
 
-    - `Bolus`: Fast insulin delivery events in Units
+    - `Bolus`: Insulin delivery events in Units, or Units/hour
     - `Meal`: Grams of carbohydrate
     - `TempBasal`: Paced insulin delivery events in Units/hour, or Percent of scheduled basal
 
@@ -241,7 +241,7 @@ class ResolveHistory(ParseHistory):
 
     - TempBasal and TempBasalDuration are combined into TempBasal records
     - PumpSuspend and PumpResume are combined into TempBasal records of 0%
-    - Square Bolus is converted to a TempBasal record
+    - Square Bolus is converted to a Bolus record
     - Normal Bolus is converted to a Bolus record
     - BolusWizard carb entry is converted to a Meal record
     - JournalEntryMealMarker is converted to a Meal record
@@ -263,7 +263,7 @@ class ResolveHistory(ParseHistory):
         :param current_datetime: The datetime at which the history was generated
         :type current_datetime: datetime
         """
-        self.resolved_history = []
+        self.resolved_records = []
         self.current_datetime = current_datetime or datetime.now()
 
         # Temporary parsing state
@@ -280,7 +280,7 @@ class ResolveHistory(ParseHistory):
             pass
         else:
             if decoded is not None:
-                self.resolved_history.append(decoded)
+                self.resolved_records.append(decoded)
 
     def _decode_bolus(self, event):
         start_at = self._event_datetime(event)
@@ -297,13 +297,14 @@ class ResolveHistory(ParseHistory):
                 # window, then shorten the actual duration by the ratio of delivered insulin.
                 if start_at + timedelta(minutes=duration) < self.current_datetime:
                     duration = int(duration * delivered / programmed)
+                    programmed = delivered
 
-                return TempBasal(
+                return Bolus(
                     start_at=start_at,
                     end_at=start_at + timedelta(minutes=duration),
                     amount=rate,
                     unit=Unit.units_per_hour,
-                    description="Square bolus: {}U over {}min".format(delivered, duration)
+                    description="Square bolus: {}U over {}min".format(programmed, duration)
                 )
 
             else:
@@ -312,7 +313,7 @@ class ResolveHistory(ParseHistory):
                     end_at=start_at,
                     amount=delivered,
                     unit=Unit.units,
-                    description="Normal bolus: {}U".format(delivered)
+                    description="Normal bolus: {}U".format(programmed)
                 )
 
     def _decode_boluswizard(self, event):
@@ -371,3 +372,180 @@ class ResolveHistory(ParseHistory):
 
     def _decode_tempbasalduration(self, event):
         self._temp_basal_duration = event[self.DURATION_IN_MINUTES_KEY]
+
+
+class NormalizeRecords(object):
+    """Adjusts the time and basal amounts of records relative to a basal schedule and a timestamp
+
+    If a `basal_schedule` is provided, the TempBasal `amount` is replaced with a relative dose in
+    Units/hour. TempBasal records might be split into multiples to account for boundary crossings in
+    the basal schedule.
+
+    If a `zero_datetime` is provided, the values for the `start_at` and `end_at` keys are
+    replaced with signed integers representing the number of minutes from zero.
+    """
+    def __init__(self, resolved_records, basal_schedule=None, zero_datetime=None):
+        """Initializes a new instance of the record parser
+
+        The record input is expected to be in the format returned by the ResolveHistory class.
+
+        If `basal_schedule` or `zero_datetime` are not provided, than the record changes are not
+        made.
+
+        :param resolved_records: A list of pump records in reverse-chronological order
+        :type resolved_records: list(.models.BaseRecord)
+        :param basal_schedule: A list of basal rates scheduled by time in chronological order
+        :type basal_schedule: list(dict)
+        :param zero_datetime: The timestamp by which to center the relative times
+        :type zero_datetime: datetime
+        """
+        self.normalized_records = []
+
+        self.basal_schedule = basal_schedule
+
+        for event in resolved_records:
+            self.add_history_event(event)
+
+        if zero_datetime is not None:
+            for event in self.normalized_records:
+                for key in [key for key in event.iterkeys() if key.endswith("_at")]:
+                    event[key] = int(round((
+                        parser.parse(event[key]) - zero_datetime
+                    ).total_seconds() / 60))
+
+    def add_history_event(self, event):
+        try:
+            decoded = getattr(self, "_decode_{}".format(event["type"].lower()))(event)
+        except AttributeError:
+            decoded = [event]
+
+        self.normalized_records.extend(decoded or [])
+
+    def basal_rates_in_range(self, start_time, end_time):
+        """Returns a list of the current basal rates effective between the specified times
+
+        :param start_time:
+        :type start_time: datetime.time
+        :param end_time:
+        :type end_time: datetime.time
+        :return: A list of basal rates
+        :rtype: list(dict)
+
+        :raises AssertionError: The argument values are invalid
+        """
+        assert (start_time < end_time)
+
+        start_index = 0
+        end_index = len(self.basal_schedule)
+
+        for index, basal_rate in enumerate(self.basal_schedule):
+            basal_start_time = parser.parse(basal_rate["start"]).time()
+            if start_time >= basal_start_time:
+                start_index = index
+            if end_time < basal_start_time:
+                end_index = index
+                break
+
+        return self.basal_schedule[start_index:end_index]
+
+    def _basal_adjustments_in_range(
+            self,
+            start_datetime,
+            end_datetime,
+            percent=None,
+            absolute=None,
+            description=""
+    ):
+        """Returns a list of TempBasal objects representing the specified adjustment to basal rate
+
+        :param start_datetime: The start time of the basal adjustment
+        :type start_datetime: datetime
+        :param end_datetime: The end time of the basal adjustment
+        :type end_datetime: datetime
+        :param percent: A multiplier to apply to the current basal rate
+        :type percent: int
+        :param absolute: A specified temporary basal absolute, in U/hour
+        :type absolute: float
+        :param description: A description to attach to each new event
+        :type description: basestring
+
+        :return: A list of TempBasal objects
+        :rtype: list(TempBasal)
+
+        :raises AssertionError: The arguments are either missing or invalid
+        """
+        assert (start_datetime < end_datetime)
+        assert (end_datetime - start_datetime < timedelta(hours=24))
+        assert (percent is not None or absolute is not None)
+
+        start_time = start_datetime.time()
+        end_time = end_datetime.time()
+
+        # If the requested timestamps cross a day boundary, return the combination of each
+        # single-day call
+        if start_time > end_time:
+            return self._basal_adjustments_in_range(
+                start_datetime,
+                start_datetime.replace(hour=23, minute=59, second=59),
+                percent=percent,
+                absolute=absolute
+            ) + self._basal_adjustments_in_range(
+                end_datetime.replace(hour=0, minute=0, second=0),
+                end_datetime,
+                percent=percent,
+                absolute=absolute
+            )
+
+        temp_basal_events = []
+        basal_rates = self.basal_rates_in_range(start_time, end_time)
+
+        for index, basal_rate in enumerate(basal_rates):
+            basal_start_time = parser.parse(basal_rate["start"]).time()
+
+            # If we are in a list longer than one element, adjust the boundary timestamps to the
+            # basal time
+            if index > 0:
+                if start_time <= basal_start_time:
+                    t0 = datetime.combine(start_datetime.date(), basal_start_time)
+                else:
+                    t0 = datetime.combine(end_datetime.date(), basal_start_time)
+                temp_basal_events[-1]["end_at"] = t0.isoformat()
+            else:
+                t0 = start_datetime
+
+            t1 = end_datetime
+
+            if t1 - t0 > timedelta(minutes=0):
+                # Find the delta of the new rate
+                rate = absolute
+                if percent is not None:
+                    rate = basal_rate["rate"] * percent / 100.0
+
+                amount = rate - basal_rate["rate"]
+
+                temp_basal_events.insert(0, TempBasal(
+                    start_at=t0,
+                    end_at=t1,
+                    amount=amount,
+                    unit=Unit.units_per_hour,
+                    description=description
+                ))
+
+        return temp_basal_events
+
+    def _decode_tempbasal(self, event):
+        if self.basal_schedule is not None:
+            start_datetime = parser.parse(event["start_at"])
+            end_datetime = parser.parse(event["end_at"])
+
+            if end_datetime - start_datetime > timedelta(minutes=0):
+                adjustment = "percent" if event["unit"] == Unit.percent_of_basal else "absolute"
+
+                events = self._basal_adjustments_in_range(
+                    start_datetime,
+                    end_datetime,
+                    description=event["description"],
+                    **{adjustment: event["amount"]}
+                )
+
+                return events
