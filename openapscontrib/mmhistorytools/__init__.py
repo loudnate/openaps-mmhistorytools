@@ -8,7 +8,6 @@ from .version import __version__
 import argparse
 from dateutil.parser import parse
 import json
-import sys
 
 from openaps.uses.use import Use
 
@@ -77,7 +76,7 @@ class BaseUse(Use):
         parser.add_argument(
             'infile',
             nargs='?',
-            default=sys.stdin,
+            default='-',
             help='JSON-encoded history data'
         )
 
@@ -125,7 +124,10 @@ Tasks performed by this pass:
 
     def get_program(self, params):
         args, kwargs = super(clean, self).get_program(params)
-        kwargs.update(start_datetime=_opt_date(params.start), end_datetime=_opt_date(params.end))
+        kwargs.update(
+            start_datetime=_opt_date(params['start']),
+            end_datetime=_opt_date(params['end'])
+        )
 
         return args, kwargs
 
@@ -145,7 +147,7 @@ Tasks performed by this pass:
  - Duplicates and modifies temporary basal records to account for delivery pauses when suspended
     """
     def main(self, args, app):
-        args, _ = self.get_program(args)
+        args, _ = self.get_program(self.get_params(args))
 
         tool = ReconcileHistory(*args)
 
@@ -190,7 +192,7 @@ Events that are not related to the record types or seem to have no effect are dr
         return args, kwargs
 
     def main(self, args, app):
-        args, kwargs = self.get_program(args)
+        args, kwargs = self.get_program(self.get_params(args))
 
         tool = ResolveHistory(*args, **kwargs)
 
