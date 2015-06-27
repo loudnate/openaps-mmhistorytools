@@ -68,9 +68,6 @@ def _opt_json_file(filename):
 
 
 class BaseUse(Use):
-    def get_params(self, args):
-        return dict(infile=argparse.FileType('r')(args.infile))
-
     def configure_app(self, app, parser):
         """Define command arguments.
 
@@ -84,6 +81,19 @@ class BaseUse(Use):
             help='JSON-encoded history data'
         )
 
+    def get_params(self, args):
+        return dict(infile=args.infile)
+
+    def get_program(self, params):
+        """Parses params into history parser constructor arguments
+
+        :param params:
+        :type params: dict
+        :return:
+        :rtype: tuple(list, dict)
+        """
+        return [json.load(argparse.FileType('r')(params['infile']))], dict()
+
 
 class clean(BaseUse):
     """Resolve inconsistencies from a sequence of pump history
@@ -93,12 +103,6 @@ Tasks performed by this pass:
  - Creates PumpSuspend and PumpResume records to complete missing pairs
  - Removes any records whose timestamps don't fall into the specified window
     """
-    def get_params(self, args):
-        params = super(clean, self).get_params(args)
-        params.update(start_datetime=_opt_date(args.start), end_datetime=_opt_date(args.end))
-
-        return params
-
     def configure_app(self, app, parser):
         super(clean, self).configure_app(app, parser)
 
@@ -113,10 +117,22 @@ Tasks performed by this pass:
             help='The final timestamp of the window to return'
         )
 
-    def main(self, args, app):
-        params = self.get_params(args)
+    def get_params(self, args):
+        params = super(clean, self).get_params(args)
+        params.update(start=args.start, end=args.end)
 
-        tool = CleanHistory(json.load(params.pop('infile')), **params)
+        return params
+
+    def get_program(self, params):
+        args, kwargs = super(clean, self).get_program(params)
+        kwargs.update(start_datetime=_opt_date(params.start), end_datetime=_opt_date(params.end))
+
+        return args, kwargs
+
+    def main(self, args, app):
+        args, kwargs = self.get_program(self.get_params(args))
+
+        tool = CleanHistory(*args, **kwargs)
 
         return tool.clean_history
 
@@ -129,9 +145,9 @@ Tasks performed by this pass:
  - Duplicates and modifies temporary basal records to account for delivery pauses when suspended
     """
     def main(self, args, app):
-        params = self.get_params(args)
+        args, _ = self.get_program(args)
 
-        tool = ReconcileHistory(json.load(params.pop('infile')))
+        tool = ReconcileHistory(*args)
 
         return tool.reconciled_history
 
@@ -152,13 +168,6 @@ The following history events are parsed:
 - JournalEntryMealMarker is converted to a Meal record
 Events that are not related to the record types or seem to have no effect are dropped.
 """
-
-    def get_params(self, args):
-        params = super(resolve, self).get_params(args)
-        params.update(current_datetime=_opt_date(args.now))
-
-        return params
-
     def configure_app(self, app, parser):
         super(resolve, self).configure_app(app, parser)
 
@@ -168,10 +177,22 @@ Events that are not related to the record types or seem to have no effect are dr
             help='The timestamp of when the history sequence was read'
         )
 
-    def main(self, args, app):
-        params = self.get_params(args)
+    def get_params(self, args):
+        params = super(resolve, self).get_params(args)
+        params.update(now=args.now)
 
-        tool = ResolveHistory(json.load(params.pop('infile')), **params)
+        return params
+
+    def get_program(self, params):
+        args, kwargs = super(resolve, self).get_program(params)
+        kwargs.update(current_datetime=_opt_date(params['now']))
+
+        return args, kwargs
+
+    def main(self, args, app):
+        args, kwargs = self.get_program(args)
+
+        tool = ResolveHistory(*args, **kwargs)
 
         return tool.resolved_records
 
@@ -185,16 +206,6 @@ crossings in the basal schedule.
 If `--zero-at` is provided, the values for the `start_at` and `end_at` keys are replaced with signed
 integers representing the number of minutes from `--zero-at`.
 """
-
-    def get_params(self, args):
-        params = super(normalize, self).get_params(args)
-        params.update(
-            basal_schedule=_opt_json_file(args.basal_profile),
-            zero_datetime=_opt_date(args.zero_at)
-        )
-
-        return params
-
     def configure_app(self, app, parser):
         super(normalize, self).configure_app(app, parser)
 
@@ -210,13 +221,28 @@ integers representing the number of minutes from `--zero-at`.
             help='The timestamp by which to adjust record timestamps'
         )
 
-    def main(self, args, app):
-        params = self.get_params(args)
-
-        tool = NormalizeRecords(
-            json.load(params.pop('infile')),
-            **params
+    def get_params(self, args):
+        params = super(normalize, self).get_params(args)
+        params.update(
+            basal_profile=args.basal_profile,
+            zero_at=args.zero_at
         )
+
+        return params
+
+    def get_program(self, params):
+        args, kwargs = super(normalize, self).get_program(params)
+        kwargs.update(
+            basal_schedule=_opt_json_file(args['basal_profile']),
+            zero_datetime=_opt_date(args['zero_at'])
+        )
+
+        return args, kwargs
+
+    def main(self, args, app):
+        args, kwargs = self.get_program(self.get_params(args))
+
+        tool = NormalizeRecords(*args, **kwargs)
 
         return tool.normalized_records
 
