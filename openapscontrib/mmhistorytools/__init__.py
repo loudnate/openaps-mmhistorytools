@@ -6,7 +6,7 @@ mmhistorytools - tools for cleaning, condensing, and reformatting history data
 from .version import __version__
 
 import argparse
-from dateutil import parser as dateparser
+from dateutil.parser import parse
 import json
 import sys
 
@@ -43,15 +43,43 @@ def get_uses(device, config):
     return [clean, reconcile, resolve, normalize]
 
 
+def _opt_date(timestamp):
+    """Parses a date string if defined
+
+    :param timestamp: The date string to parse
+    :type timestamp: basestring
+    :return: A datetime object if a timestamp was specified
+    :rtype: datetime.datetime|NoneType
+    """
+    if timestamp is not None:
+        return parse(timestamp)
+
+
+def _opt_json_file(filename):
+    """Parses a filename as JSON input if defined
+
+    :param filename: The path to the file to parse
+    :type filename: basestring
+    :return: A decoded JSON object if a filename was specified
+    :rtype: dict|list|NoneType
+    """
+    if filename is not None:
+        return json.load(argparse.FileType('r')(filename))
+
+
 class BaseUse(Use):
     def get_params(self, args):
-        return dict(infile=args.infile)
+        return dict(infile=argparse.FileType('r')(args.infile))
 
     def configure_app(self, app, parser):
+        """Define command arguments.
+
+        Only primitive types should be used here to allow for serialization and partial application
+        in via openaps-report.
+        """
         parser.add_argument(
             'infile',
             nargs='?',
-            type=argparse.FileType('r'),
             default=sys.stdin,
             help='JSON-encoded history data'
         )
@@ -67,7 +95,7 @@ Tasks performed by this pass:
     """
     def get_params(self, args):
         params = super(clean, self).get_params(args)
-        params.update(start_datetime=args.start, end_datetime=args.end)
+        params.update(start_datetime=_opt_date(args.start), end_datetime=_opt_date(args.end))
 
         return params
 
@@ -76,13 +104,11 @@ Tasks performed by this pass:
 
         parser.add_argument(
             '--start',
-            type=dateparser.parse,
             default=None,
             help='The initial timestamp of the window to return'
         )
         parser.add_argument(
             '--end',
-            type=dateparser.parse,
             default=None,
             help='The final timestamp of the window to return'
         )
@@ -129,7 +155,7 @@ Events that are not related to the record types or seem to have no effect are dr
 
     def get_params(self, args):
         params = super(resolve, self).get_params(args)
-        params.update(current_datetime=args.now)
+        params.update(current_datetime=_opt_date(args.now))
 
         return params
 
@@ -138,7 +164,6 @@ Events that are not related to the record types or seem to have no effect are dr
 
         parser.add_argument(
             '--now',
-            type=dateparser.parse,
             default=None,
             help='The timestamp of when the history sequence was read'
         )
@@ -163,7 +188,10 @@ integers representing the number of minutes from `--zero-at`.
 
     def get_params(self, args):
         params = super(normalize, self).get_params(args)
-        params.update(basal_schedule=args.basal_profile, zero_datetime=args.zero_at)
+        params.update(
+            basal_schedule=_opt_json_file(args.basal_profile),
+            zero_datetime=_opt_date(args.zero_at)
+        )
 
         return params
 
@@ -172,14 +200,12 @@ integers representing the number of minutes from `--zero-at`.
 
         parser.add_argument(
             '--basal-profile',
-            type=argparse.FileType('r'),
             default=None,
             help='A file containing a basal profile by which to adjust TempBasal records'
         )
 
         parser.add_argument(
             '--zero-at',
-            type=dateparser.parse,
             default=None,
             help='The timestamp by which to adjust record timestamps'
         )
@@ -187,13 +213,8 @@ integers representing the number of minutes from `--zero-at`.
     def main(self, args, app):
         params = self.get_params(args)
 
-        basal_schedule = params.pop('basal_schedule')
-        if basal_schedule is not None:
-            basal_schedule = json.load(basal_schedule)
-
         tool = NormalizeRecords(
             json.load(params.pop('infile')),
-            basal_schedule=basal_schedule,
             **params
         )
 
