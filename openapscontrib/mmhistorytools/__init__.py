@@ -50,7 +50,7 @@ def _opt_date(timestamp):
     :return: A datetime object if a timestamp was specified
     :rtype: datetime.datetime|NoneType
     """
-    if timestamp is not None:
+    if timestamp:
         return parse(timestamp)
 
 
@@ -62,7 +62,7 @@ def _opt_json_file(filename):
     :return: A decoded JSON object if a filename was specified
     :rtype: dict|list|NoneType
     """
-    if filename is not None:
+    if filename:
         return json.load(argparse.FileType('r')(filename))
 
 
@@ -118,15 +118,20 @@ Tasks performed by this pass:
 
     def get_params(self, args):
         params = super(clean, self).get_params(args)
-        params.update(start=args.start, end=args.end)
+
+        if args.start:
+            params.update(start=args.start)
+
+        if args.end:
+            params.update(end=args.end)
 
         return params
 
     def get_program(self, params):
         args, kwargs = super(clean, self).get_program(params)
         kwargs.update(
-            start_datetime=_opt_date(params['start']),
-            end_datetime=_opt_date(params['end'])
+            start_datetime=_opt_date(params.get('start')),
+            end_datetime=_opt_date(params.get('end'))
         )
 
         return args, kwargs
@@ -181,13 +186,15 @@ Events that are not related to the record types or seem to have no effect are dr
 
     def get_params(self, args):
         params = super(resolve, self).get_params(args)
-        params.update(now=args.now)
+
+        if args.now:
+            params.update(now=args.now)
 
         return params
 
     def get_program(self, params):
         args, kwargs = super(resolve, self).get_program(params)
-        kwargs.update(current_datetime=_opt_date(params['now']))
+        kwargs.update(current_datetime=_opt_date(params.get('now')))
 
         return args, kwargs
 
@@ -225,18 +232,19 @@ integers representing the number of minutes from `--zero-at`.
 
     def get_params(self, args):
         params = super(normalize, self).get_params(args)
-        params.update(
-            basal_profile=args.basal_profile,
-            zero_at=args.zero_at
-        )
+        if args.basal_profile:
+            params.update(basal_profile=args.basal_profile)
+
+        if args.zero_at:
+            params.update(zero_at=args.zero_at)
 
         return params
 
     def get_program(self, params):
         args, kwargs = super(normalize, self).get_program(params)
         kwargs.update(
-            basal_schedule=_opt_json_file(args['basal_profile']),
-            zero_datetime=_opt_date(args['zero_at'])
+            basal_schedule=_opt_json_file(params.get('basal_profile')),
+            zero_datetime=_opt_date(params.get('zero_at'))
         )
 
         return args, kwargs
