@@ -175,33 +175,10 @@ The following history events are parsed:
 - JournalEntryMealMarker is converted to a Meal record
 Events that are not related to the record types or seem to have no effect are dropped.
 """
-    def configure_app(self, app, parser):
-        super(resolve, self).configure_app(app, parser)
-
-        parser.add_argument(
-            '--now',
-            default=None,
-            help='The timestamp of when the history sequence was read'
-        )
-
-    def get_params(self, args):
-        params = super(resolve, self).get_params(args)
-
-        if args.now:
-            params.update(now=args.now)
-
-        return params
-
-    def get_program(self, params):
-        args, kwargs = super(resolve, self).get_program(params)
-        kwargs.update(current_datetime=_opt_date(params.get('now')))
-
-        return args, kwargs
-
     def main(self, args, app):
-        args, kwargs = self.get_program(self.get_params(args))
+        args, _ = self.get_program(self.get_params(args))
 
-        tool = ResolveHistory(*args, **kwargs)
+        tool = ResolveHistory(*args)
 
         return tool.resolved_records
 
