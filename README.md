@@ -73,7 +73,7 @@ Tasks performed by this pass:
 
 All `infile` arguments default to accept stdin, so commands can be chained like so:
 ```bash
-openaps use pump read_history_data 0 | openaps use munge clean --start 2015-06-13T17:37:58 | openaps use munge reconcile | openaps use munge resolve --now 2015-06-13T21:37:58 | openaps use munge normalize --basal-profile basal.json --zero-at 2015-06-21T21:37:58
+openaps use pump read_history_data 0 | openaps use munge clean --start 2015-06-13T17:37:58 | openaps use munge reconcile | openaps use munge resolve | openaps use munge normalize --basal-profile basal.json --zero-at 2015-06-21T21:37:58
 ```
 
 ## Motivation
