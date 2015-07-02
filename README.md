@@ -5,7 +5,7 @@ An [openaps](https://github.com/openaps/openaps) plugin for cleaning, condensing
 ### Installing from pypi
 
 ```bash
-sudo easy_install openapscontrib.mmhistorytools
+$ sudo easy_install openapscontrib.mmhistorytools
 ```
 
 ### Installing from source for development
@@ -73,7 +73,7 @@ Tasks performed by this pass:
 
 All `infile` arguments default to accept stdin, so commands can be chained like so:
 ```bash
-openaps use pump read_history_data 0 | openaps use munge clean --start 2015-06-13T17:37:58 | openaps use munge reconcile | openaps use munge resolve | openaps use munge normalize --basal-profile basal.json --zero-at 2015-06-21T21:37:58
+$ openaps use pump read_history_data 0 | openaps use munge clean --start 2015-06-13T17:37:58 | openaps use munge reconcile | openaps use munge resolve | openaps use munge normalize --basal-profile basal.json --zero-at 2015-06-21T21:37:58
 ```
 
 ## Motivation
@@ -82,6 +82,14 @@ Pump history records are optimized for storage, and not necessarily for analysis
 Interpreting recent historical events is a foundational component in any [openaps](https://github.com/openaps/openaps) project, and this plugin aspires to be a central place for documenting and testing the intricacies of that task.
 
 The `mmhistorytools` plugin vends multiple commands. Each command does a single pass over a set of history and is intentionally limited in scope, prioritizing testability above performance.
+
+## Testing
+
+Unit tests can be run via setuptools:
+
+```bash
+$ python setup.py test
+```
 
 ## Contributing
 Contributions are welcome and encouraged in the form of bugs and pull requests.
