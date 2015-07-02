@@ -14,7 +14,7 @@ from openapscontrib.mmhistorytools.models import Bolus, Meal, TempBasal
 
 
 def get_file_at_path(path):
-    return "{}/{}".format(os.path.dirname(os.path.realpath(sys.argv[0])), path)
+    return "{}/{}".format(os.path.dirname(os.path.realpath(__file__)), path)
 
 
 class CleanHistoryTestCase(unittest.TestCase):
