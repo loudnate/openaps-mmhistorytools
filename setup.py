@@ -36,4 +36,5 @@ setup(
     include_package_data=True,
     install_requires=requires,
     namespace_packages=['openapscontrib'],
+    test_suite="tests"
 )
