@@ -14,7 +14,7 @@ from openapscontrib.mmhistorytools.models import Bolus, Meal, TempBasal
 
 
 def get_file_at_path(path):
-    return "{}/{}".format(os.path.dirname(os.path.realpath(sys.argv[0])), path)
+    return "{}/{}".format(os.path.dirname(os.path.realpath(__file__)), path)
 
 
 class CleanHistoryTestCase(unittest.TestCase):
@@ -602,7 +602,7 @@ class ResolveHistoryTestCase(unittest.TestCase):
         with open(get_file_at_path("fixtures/square_bolus.json")) as fp:
             pump_history = json.load(fp)
 
-        h = ResolveHistory(pump_history, current_datetime=datetime(2015, 6, 19, 23, 10))
+        h = ResolveHistory(pump_history)
 
         _ = parser.parse
 
@@ -655,45 +655,80 @@ class ResolveHistoryTestCase(unittest.TestCase):
         )
 
     def test_square_bolus_cancelled(self):
-        with open(get_file_at_path("fixtures/square_bolus.json")) as fp:
+        with open(get_file_at_path("fixtures/square_bolus_cancel.json")) as fp:
             pump_history = json.load(fp)
 
-        h = ResolveHistory(pump_history, current_datetime=datetime(2015, 6, 20, 23, 10))
+        h = ResolveHistory(pump_history)
 
         _ = parser.parse
 
         self.assertListEqual(
             [
                 Bolus(
-                    start_at=_("2015-06-19T23:04:25"),
-                    end_at=_("2015-06-19T23:04:25"),
+                    start_at=_("2015-06-19T18:25:17"),
+                    end_at=_("2015-06-19T18:25:17"),
                     amount=1.6,
                     unit="U",
                     description="Normal bolus: 1.6U"
                 ),
                 Bolus(
-                    start_at=_("2015-06-19T21:31:15"),
-                    end_at=_("2015-06-19T21:31:15"),
-                    amount=2.5,
+                    start_at=_("2015-06-19T18:22:10"),
+                    end_at=_("2015-06-19T18:22:10"),
+                    amount=3.0,
                     unit="U",
-                    description="Normal bolus: 2.5U"
+                    description="Normal bolus: 3.0U"
                 ),
                 Bolus(
-                    start_at=_("2015-06-19T21:32:55"),
-                    end_at=_("2015-06-19T23:04:55"),
+                    start_at=_("2015-06-19T18:24:10"),
+                    end_at=_("2015-06-19T19:54:10"),
+                    amount=2.0 / 1.5,
+                    unit="U/hour",
+                    description="Square bolus: 2.0U over 90min"
+                ),
+                Bolus(
+                    start_at=_("2015-06-19T16:46:55"),
+                    end_at=_("2015-06-19T16:46:55"),
+                    amount=1.3,
+                    unit="U",
+                    description="Normal bolus: 1.3U"
+                ),
+                Bolus(
+                    start_at=_("2015-06-19T13:29:17"),
+                    end_at=_("2015-06-19T13:29:17"),
+                    amount=1.8,
+                    unit="U",
+                    description="Normal bolus: 1.8U"
+                ),
+                Bolus(
+                    start_at=_("2015-06-19T13:30:30"),
+                    end_at=_("2015-06-19T13:55:30"),
+                    amount=1.2,
+                    unit="U/hour",
+                    description="Square bolus: 0.5U over 25min"
+                ),
+                Bolus(
+                    start_at=_("2015-06-19T11:44:23"),
+                    end_at=_("2015-06-19T11:44:23"),
+                    amount=3.0,
+                    unit="U",
+                    description="Normal bolus: 3.0U"
+                ),
+                Bolus(
+                    start_at=_("2015-06-19T11:29:26"),
+                    end_at=_("2015-06-19T12:29:26"),
                     amount=1.4,
                     unit="U/hour",
-                    description="Square bolus: 2.15U over 92min"
+                    description="Square bolus: 1.4U over 60min"
                 ),
                 Bolus(
-                    start_at=_("2015-06-19T21:02:39"),
-                    end_at=_("2015-06-19T21:02:39"),
+                    start_at=_("2015-06-19T08:00:24"),
+                    end_at=_("2015-06-19T08:00:24"),
                     amount=2.0,
                     unit="U",
                     description="Normal bolus: 2.0U"
                 )
             ],
-            [r for r in h.resolved_records if r["type"] in ("Bolus", "TempBasal")]
+            [r for r in h.resolved_records if r["type"] == "Bolus"]
         )
 
 
@@ -824,8 +859,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     CleanHistory(
                         pump_history
                     ).clean_history
-                ).reconciled_history,
-                current_datetime=zero_datetime
+                ).reconciled_history
             ).resolved_records,
             basal_schedule=self.basal_rate_schedule,
             zero_datetime=zero_datetime
@@ -897,8 +931,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     CleanHistory(
                         pump_history
                     ).clean_history
-                ).reconciled_history,
-                current_datetime=zero_datetime
+                ).reconciled_history
             ).resolved_records,
             basal_schedule=self.basal_rate_schedule,
             zero_datetime=zero_datetime
@@ -970,8 +1003,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     CleanHistory(
                         pump_history
                     ).clean_history
-                ).reconciled_history,
-                current_datetime=zero_datetime
+                ).reconciled_history
             ).resolved_records,
             basal_schedule=self.basal_rate_schedule,
             zero_datetime=zero_datetime
@@ -1103,8 +1135,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                         start_datetime=start_datetime,
                         end_datetime=end_datetime
                     ).clean_history
-                ).reconciled_history,
-                current_datetime=zero_datetime
+                ).reconciled_history
             ).resolved_records,
             basal_schedule=self.basal_rate_schedule,
             zero_datetime=zero_datetime
@@ -1190,10 +1221,9 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
             ResolveHistory(
                 ReconcileHistory(
                     CleanHistory(
-                        pump_history,
+                        pump_history
                     ).clean_history
-                ).reconciled_history,
-                current_datetime=zero_datetime
+                ).reconciled_history
             ).resolved_records,
             basal_schedule=self.basal_rate_schedule,
             zero_datetime=zero_datetime
