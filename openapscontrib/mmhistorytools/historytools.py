@@ -248,26 +248,20 @@ class ResolveHistory(ParseHistory):
 
     Events that are not related to the record types or seem to have no effect are dropped.
     """
-    def __init__(self, reconciled_history, current_datetime=None):
+    def __init__(self, reconciled_history):
         """Initializes a new instance of the history parser
 
         The input history is expected to have no open-ended suspend windows, which can be resolved
         by the CleanHistory class.
 
-        If not provided, `current_datetime` will default to datetime.now(), which is assumed to be
-        a naive datetime in the same timezone as the pump. This is not a safe assumption to make
-        for most fresh Raspberry Pi setups.
-
         :param reconciled_history: A list of pump history events in reverse-chronological order
         :type reconciled_history: list(dict)
-        :param current_datetime: The datetime at which the history was generated
-        :type current_datetime: datetime
         """
         self.resolved_records = []
-        self.current_datetime = current_datetime or datetime.now()
 
         # Temporary parsing state
         self._resume_datetime = None
+        self._suspend_datetime = None
         self._temp_basal_duration = None
 
         for event in reconciled_history:
@@ -290,18 +284,19 @@ class ResolveHistory(ParseHistory):
         if max(delivered, programmed) > 0:
             if event["type"] == "square":
                 duration = event["duration"]
-
                 rate = programmed / (duration / 60.0)
+                end_at = start_at + timedelta(minutes=duration)
 
-                # If less than 100% of the programmed dose was delivered and we're past the delivery
-                # window, then shorten the actual duration by the ratio of delivered insulin.
-                if start_at + timedelta(minutes=duration) < self.current_datetime:
+                # If the pump was suspended at any time during the bolus, adjust the duration
+                # to reflect the delivered amount
+                if self._suspend_datetime and end_at > self._suspend_datetime:
                     duration = int(duration * delivered / programmed)
+                    end_at = start_at + timedelta(minutes=duration)
                     programmed = delivered
 
                 return Bolus(
                     start_at=start_at,
-                    end_at=start_at + timedelta(minutes=duration),
+                    end_at=end_at,
                     amount=rate,
                     unit=Unit.units_per_hour,
                     description="Square bolus: {}U over {}min".format(programmed, duration)
@@ -342,6 +337,7 @@ class ResolveHistory(ParseHistory):
         end_at = self._resume_datetime
 
         self._resume_datetime = None
+        self._suspend_datetime = start_at
 
         if end_at > start_at:
             return TempBasal(
