@@ -15,27 +15,12 @@ class ParseHistory(object):
         return parser.parse(event["timestamp"])
 
 
-class CleanHistory(ParseHistory):
-    """Analyze Medtronic pump history and resolves basic inconsistencies
-
-    Responsibilities:
-    - De-duplicates bolus wizard entries
-    - Ensures suspend/resume records exist in pairs (inserting an extra event as necessary)
-    - Removes any records not in the start_datetime to end_datetime window
-    """
+class TrimHistory(ParseHistory):
+    """Trims Medtronic pump history to a specified time window"""
     def __init__(self, pump_history, start_datetime=None, end_datetime=None):
-        """Initializes a new instance of the history parser
+        super(TrimHistory, self).__init__()
 
-        :param pump_history: A list of pump history events, in reverse-chronological order
-        :type pump_history: list(dict)
-        :param start_datetime: The start time of history events. If not provided, the oldest
-        record's timestamp is used
-        :type start_datetime: datetime
-        :param end_datetime: The end time of history events. If not provided, the latest record's
-        timestamp is used
-        :type end_datetime: datetime
-        """
-        self.clean_history = []
+        self.trimmed_history = []
         self.start_datetime = start_datetime
         self.end_datetime = end_datetime
 
@@ -46,20 +31,7 @@ class CleanHistory(ParseHistory):
             if self.end_datetime is None:
                 self.end_datetime = self._event_datetime(pump_history[0])
 
-        # Temporary parsing state
-        self._boluswizard_events_by_body = defaultdict(list)
-        self._last_resume_event = None
-        self._last_temp_basal_duration_event = None
-
-        for event in pump_history:
-            self.add_history_event(event)
-
-        # The pump was suspended before the history window began
-        if self._last_resume_event is not None:
-            self.add_history_event({
-                "_type": "PumpSuspend",
-                "timestamp": self.start_datetime.isoformat()
-            })
+        self.trimmed_history.extend(self._filter_events_in_range(pump_history))
 
     def _filter_events_in_range(self, events):
         start_datetime = self.start_datetime
@@ -74,13 +46,59 @@ class CleanHistory(ParseHistory):
 
         return filter(timestamp_in_range, events)
 
+
+class CleanHistory(ParseHistory):
+    """Analyze Medtronic pump history and resolves basic inconsistencies
+
+    Responsibilities:
+    - De-duplicates bolus wizard entries
+    - Ensures suspend/resume records exist in pairs (inserting an extra event as necessary)
+    """
+    def __init__(self, trimmed_history, start_datetime=None, end_datetime=None):
+        """Initializes a new instance of the history parser
+
+        :param trimmed_history: A list of pump history events, in reverse-chronological order
+        :type trimmed_history: list(dict)
+        :param start_datetime: The start time of history events. If not provided, the oldest
+        record's timestamp is used
+        :type start_datetime: datetime
+        :param end_datetime: The end time of history events. If not provided, the latest record's
+        timestamp is used
+        :type end_datetime: datetime
+        """
+        self.clean_history = []
+        self.start_datetime = start_datetime
+        self.end_datetime = end_datetime
+
+        if len(trimmed_history) > 0:
+            if self.start_datetime is None:
+                self.start_datetime = self._event_datetime(trimmed_history[-1])
+
+            if self.end_datetime is None:
+                self.end_datetime = self._event_datetime(trimmed_history[0])
+
+        # Temporary parsing state
+        self._boluswizard_events_by_body = defaultdict(list)
+        self._last_resume_event = None
+        self._last_temp_basal_duration_event = None
+
+        for event in trimmed_history:
+            self.add_history_event(event)
+
+        # The pump was suspended before the history window began
+        if self._last_resume_event is not None:
+            self.add_history_event({
+                "_type": "PumpSuspend",
+                "timestamp": self.start_datetime.isoformat()
+            })
+
     def add_history_event(self, event):
         try:
             decoded = getattr(self, "_decode_{}".format(event["_type"].lower()))(event)
         except AttributeError:
             decoded = [event]
 
-        self.clean_history.extend(self._filter_events_in_range(decoded or []))
+        self.clean_history.extend(decoded or [])
 
     def _decode_boluswizard(self, event):
         event_datetime = self._event_datetime(event)
