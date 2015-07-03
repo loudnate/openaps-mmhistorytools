@@ -26,21 +26,22 @@ $ openaps device add munge mmhistorytools
 Use the device help menu to see available commands.
 ```bash
 $ openaps use munge -h
-usage: openaps-use mmhistorytools [-h] USAGE ...
+usage: openaps-use munge [-h] USAGE ...
 
 optional arguments:
   -h, --help  show this help message and exit
 
-## Device mmhistorytools:
+## Device munge:
   vendor openapscontrib.mmhistorytools
-
+  
   mmhistorytools - tools for cleaning, condensing, and reformatting history data
-
-
-
-
+  
+  
+  
+      
 
   USAGE       Usage Details
+    trim      Trims a sequence of pump history to a specified time window
     clean     Resolve inconsistencies from a sequence of pump history
     reconcile
               Reconcile record dependencies from a sequence of pump history
@@ -54,8 +55,7 @@ optional arguments:
 Use the command help menu to see available arguments.
 ```bash
 $ openaps use munge clean -h
-usage: openaps-use mmhistorytools clean [-h] [--start START] [--end END]
-                                        infile
+usage: openaps-use munge clean [-h] [--start START] [--end END] [infile]
 
 Resolve inconsistencies from a sequence of pump history
 
@@ -64,18 +64,19 @@ positional arguments:
 
 optional arguments:
   -h, --help     show this help message and exit
-  --start START  The initial timestamp of the window to return
-  --end END      The final timestamp of the window to return
+  --start START  The initial timestamp of the known window, used to simulate
+                 missing suspend/resume events
+  --end END      The final timestamp of the history window, used to simulate
+                 missing suspend/resume events
 
 Tasks performed by this pass:
  - De-duplicates BolusWizard records
  - Creates PumpSuspend and PumpResume records to complete missing pairs
- - Removes any records whose timestamps don't fall into the specified window
 ```
 
 All `infile` arguments default to accept stdin, so commands can be chained like so:
 ```bash
-$ openaps use pump read_history_data 0 | openaps use munge clean --start 2015-06-13T17:37:58 | openaps use munge reconcile | openaps use munge resolve | openaps use munge normalize --basal-profile basal.json --zero-at 2015-06-21T21:37:58
+$ openaps use pump read_history_data 0 | openaps use munge trim --start 2015-07-03T10:15:00 | openaps use munge clean | openaps use munge reconcile | openaps use munge resolve | openaps use munge normalize --basal-profile basal.json --zero-at 2015-07-03T14:15:00
 ```
 
 ## Motivation
