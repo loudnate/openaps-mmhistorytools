@@ -38,9 +38,7 @@ def display_device(device):
 # agp as a vendor.  Return a list of classes which inherit from Use,
 # or are compatible with it:
 def get_uses(device, config):
-    # make an Example, openaps use command
-    # add your Uses here!
-    return [clean, reconcile, resolve, normalize]
+    return [trim, clean, reconcile, resolve, normalize]
 
 
 def _opt_date(timestamp):
