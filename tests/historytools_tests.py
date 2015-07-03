@@ -3,10 +3,9 @@ from datetime import time
 from dateutil import parser
 import json
 import os
-import sys
 import unittest
 
-from openapscontrib.mmhistorytools.historytools import CleanHistory
+from openapscontrib.mmhistorytools.historytools import CleanHistory, TrimHistory
 from openapscontrib.mmhistorytools.historytools import NormalizeRecords
 from openapscontrib.mmhistorytools.historytools import ReconcileHistory
 from openapscontrib.mmhistorytools.historytools import ResolveHistory
@@ -15,6 +14,165 @@ from openapscontrib.mmhistorytools.models import Bolus, Meal, TempBasal
 
 def get_file_at_path(path):
     return "{}/{}".format(os.path.dirname(os.path.realpath(__file__)), path)
+
+
+class TrimHistoryTestCase(unittest.TestCase):
+    def test_trim_no_args(self):
+        with open(get_file_at_path('fixtures/square_bolus.json')) as fp:
+            pump_history = json.load(fp)
+
+        h = TrimHistory(pump_history)
+
+        self.assertListEqual(
+            [
+                'Bolus 2015-06-19T23:04:25 head[8], body[0] op[0x01]',
+                'BolusWizard 2015-06-19T23:04:25 head[2], body[15] op[0x5b]',
+                'BasalProfileStart 2015-06-19T22:00:00 head[2], body[3] op[0x7b]',
+                'Bolus 2015-06-19T21:31:15 head[8], body[0] op[0x01]',
+                'Bolus 2015-06-19T21:32:55 head[8], body[0] op[0x01]',
+                'BolusWizard 2015-06-19T21:31:15 head[2], body[15] op[0x5b]',
+                'Bolus 2015-06-19T21:02:39 head[8], body[0] op[0x01]'
+            ],
+            [event['_description'] for event in h.trimmed_history]
+        )
+
+    def test_trim_inside_range(self):
+        with open(get_file_at_path('fixtures/square_bolus.json')) as fp:
+            pump_history = json.load(fp)
+
+        h = TrimHistory(
+            pump_history,
+            start_datetime=datetime(2015, 06, 19, 21, 30),
+            end_datetime=datetime(2015, 06, 19, 22)
+        )
+
+        self.assertListEqual(
+            [
+                'BasalProfileStart 2015-06-19T22:00:00 head[2], body[3] op[0x7b]',
+                'Bolus 2015-06-19T21:31:15 head[8], body[0] op[0x01]',
+                'Bolus 2015-06-19T21:32:55 head[8], body[0] op[0x01]',
+                'BolusWizard 2015-06-19T21:31:15 head[2], body[15] op[0x5b]'
+            ],
+            [event['_description'] for event in h.trimmed_history]
+        )
+
+    def test_trim_outside_range(self):
+        with open(get_file_at_path('fixtures/square_bolus.json')) as fp:
+            pump_history = json.load(fp)
+
+        h = TrimHistory(
+            pump_history,
+            start_datetime=datetime(2015, 06, 20, 04),
+            end_datetime=datetime(2015, 06, 20, 8)
+        )
+
+        self.assertListEqual(
+            [],
+            [event['_description'] for event in h.trimmed_history]
+        )
+
+    def test_trim_outside_range_inclusive(self):
+        with open(get_file_at_path('fixtures/square_bolus.json')) as fp:
+            pump_history = json.load(fp)
+
+        h = TrimHistory(
+            pump_history,
+            start_datetime=datetime(2015, 06, 19, 04),
+            end_datetime=datetime(2015, 06, 20, 04)
+        )
+
+        self.assertListEqual(
+            [
+                'Bolus 2015-06-19T23:04:25 head[8], body[0] op[0x01]',
+                'LowReservoir 2015-06-19T23:05:19 head[2], body[0] op[0x34]',
+                'BolusWizard 2015-06-19T23:04:25 head[2], body[15] op[0x5b]',
+                'BasalProfileStart 2015-06-19T22:00:00 head[2], body[3] op[0x7b]',
+                'Bolus 2015-06-19T21:31:15 head[8], body[0] op[0x01]',
+                'Bolus 2015-06-19T21:32:55 head[8], body[0] op[0x01]',
+                'BolusWizard 2015-06-19T21:31:15 head[2], body[15] op[0x5b]',
+                'Bolus 2015-06-19T21:02:39 head[8], body[0] op[0x01]'
+            ],
+            [event['_description'] for event in h.trimmed_history]
+        )
+
+    def test_trim_end_boundary(self):
+        with open(get_file_at_path('fixtures/square_bolus.json')) as fp:
+            pump_history = json.load(fp)
+
+        h = TrimHistory(
+            pump_history,
+            start_datetime=datetime(2015, 06, 19, 22),
+            end_datetime=datetime(2015, 06, 20, 04)
+        )
+
+        self.assertListEqual(
+            [
+                'Bolus 2015-06-19T23:04:25 head[8], body[0] op[0x01]',
+                'LowReservoir 2015-06-19T23:05:19 head[2], body[0] op[0x34]',
+                'BolusWizard 2015-06-19T23:04:25 head[2], body[15] op[0x5b]',
+                'BasalProfileStart 2015-06-19T22:00:00 head[2], body[3] op[0x7b]'
+            ],
+            [event['_description'] for event in h.trimmed_history]
+        )
+
+    def test_trim_end_boundary_one_arg(self):
+        with open(get_file_at_path('fixtures/square_bolus.json')) as fp:
+            pump_history = json.load(fp)
+
+        h = TrimHistory(
+            pump_history,
+            start_datetime=datetime(2015, 06, 19, 22)
+        )
+
+        self.assertListEqual(
+            [
+                'Bolus 2015-06-19T23:04:25 head[8], body[0] op[0x01]',
+                'BolusWizard 2015-06-19T23:04:25 head[2], body[15] op[0x5b]',
+                'BasalProfileStart 2015-06-19T22:00:00 head[2], body[3] op[0x7b]'
+            ],
+            [event['_description'] for event in h.trimmed_history]
+        )
+
+    def test_trim_start_boundary(self):
+        with open(get_file_at_path('fixtures/square_bolus.json')) as fp:
+            pump_history = json.load(fp)
+
+        h = TrimHistory(
+            pump_history,
+            start_datetime=datetime(2015, 06, 19, 04),
+            end_datetime=datetime(2015, 06, 19, 22)
+        )
+
+        self.assertListEqual(
+            [
+                'BasalProfileStart 2015-06-19T22:00:00 head[2], body[3] op[0x7b]',
+                'Bolus 2015-06-19T21:31:15 head[8], body[0] op[0x01]',
+                'Bolus 2015-06-19T21:32:55 head[8], body[0] op[0x01]',
+                'BolusWizard 2015-06-19T21:31:15 head[2], body[15] op[0x5b]',
+                'Bolus 2015-06-19T21:02:39 head[8], body[0] op[0x01]'
+            ],
+            [event['_description'] for event in h.trimmed_history]
+        )
+
+    def test_trim_start_boundary_one_arg(self):
+        with open(get_file_at_path('fixtures/square_bolus.json')) as fp:
+            pump_history = json.load(fp)
+
+        h = TrimHistory(
+            pump_history,
+            end_datetime=datetime(2015, 06, 19, 22)
+        )
+
+        self.assertListEqual(
+            [
+                'BasalProfileStart 2015-06-19T22:00:00 head[2], body[3] op[0x7b]',
+                'Bolus 2015-06-19T21:31:15 head[8], body[0] op[0x01]',
+                'Bolus 2015-06-19T21:32:55 head[8], body[0] op[0x01]',
+                'BolusWizard 2015-06-19T21:31:15 head[2], body[15] op[0x5b]',
+                'Bolus 2015-06-19T21:02:39 head[8], body[0] op[0x01]'
+            ],
+            [event['_description'] for event in h.trimmed_history]
+        )
 
 
 class CleanHistoryTestCase(unittest.TestCase):
@@ -278,48 +436,6 @@ class CleanHistoryTestCase(unittest.TestCase):
                 {
                     "_type": "PumpResume",
                     "timestamp": "2015-06-07T02:02:01"
-                },
-                {
-                    "_type": "PumpSuspend",
-                    "_description": "PumpSuspend 2015-06-06T20:49:57 head[2], body[0] op[0x1e]",
-                    "date": 1433620197000.0,
-                    "timestamp": "2015-06-06T20:49:57",
-                    "_body": "",
-                    "_head": "1e01",
-                    "_date": "79b114060f"
-                }
-            ],
-            h.clean_history
-        )
-
-    def test_suspend_without_resume_with_trimming_range(self):
-        pump_history = [
-            {
-                "_type": "OtherEvent",
-                "timestamp": "2015-06-06T22:12:34"
-            },
-            {
-                "_type": "OtherEvent",
-                "timestamp": "2015-06-06T21:12:34"
-            },
-            {
-                "_type": "PumpSuspend",
-                "_description": "PumpSuspend 2015-06-06T20:49:57 head[2], body[0] op[0x1e]",
-                "date": 1433620197000.0,
-                "timestamp": "2015-06-06T20:49:57",
-                "_body": "",
-                "_head": "1e01",
-                "_date": "79b114060f"
-            }
-        ]
-
-        h = CleanHistory(pump_history, end_datetime=datetime(2015, 06, 06, 21, 00, 00))
-
-        self.assertListEqual(
-            [
-                {
-                    "_type": "PumpResume",
-                    "timestamp": "2015-06-06T21:00:00"
                 },
                 {
                     "_type": "PumpSuspend",
@@ -1131,7 +1247,11 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
             ResolveHistory(
                 ReconcileHistory(
                     CleanHistory(
-                        pump_history,
+                        TrimHistory(
+                            pump_history,
+                            start_datetime=start_datetime,
+                            end_datetime=end_datetime
+                        ).trimmed_history,
                         start_datetime=start_datetime,
                         end_datetime=end_datetime
                     ).clean_history
@@ -1410,7 +1530,6 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
             ],
             records
         )
-
 
 
 if __name__ == "__main__":
