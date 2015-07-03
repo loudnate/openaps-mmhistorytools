@@ -1,6 +1,8 @@
 # mmhistorytools
 An [openaps](https://github.com/openaps/openaps) plugin for cleaning, condensing, and reformatting medtronic history data
 
+[![Build Status](https://travis-ci.org/loudnate/openaps-mmhistorytools.svg)](https://travis-ci.org/loudnate/openaps-mmhistorytools)
+
 ## Getting started
 ### Installing from pypi
 
