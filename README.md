@@ -3,6 +3,13 @@ An [openaps](https://github.com/openaps/openaps) plugin for cleaning, condensing
 
 [![Build Status](https://travis-ci.org/loudnate/openaps-mmhistorytools.svg)](https://travis-ci.org/loudnate/openaps-mmhistorytools)
 
+## Motivation
+Pump history records are optimized for storage, and not necessarily for analysis. They are a mix of mutable (`Bolus`) and immutable (`TempBasalDuration`) values. They require additional context to interpret important events, like whether a square bolus is still in delivery or whether it was cancelled, and how much basal insulin was lost during a `PumpSuspend` window.
+
+Interpreting recent historical events is a foundational component in any [openaps](https://github.com/openaps/openaps) project, and this plugin aspires to be a central place for documenting and testing the intricacies of that task.
+
+The `mmhistorytools` plugin vends multiple commands. Each command does a single pass over a set of history and is intentionally limited in scope, prioritizing testability above performance.
+
 ## Getting started
 ### Installing from pypi
 
@@ -74,25 +81,20 @@ Tasks performed by this pass:
  - Creates PumpSuspend and PumpResume records to complete missing pairs
 ```
 
+## Examples
+
 All `infile` arguments default to accept stdin, so commands can be chained like so:
 ```bash
 $ openaps use pump read_history_data 0 | openaps use munge trim --start 2015-07-03T10:15:00 | openaps use munge clean | openaps use munge reconcile | openaps use munge resolve | openaps use munge normalize --basal-profile basal.json --zero-at 2015-07-03T14:15:00
 ```
 
-## Motivation
-Pump history records are optimized for storage, and not necessarily for analysis. They are a mix of mutable (`Bolus`) and immutable (`TempBasalDuration`) values. They require additional context to interpret important events, like whether a square bolus is still in delivery or whether it was cancelled, and how much basal insulin was lost during a `PumpSuspend` window.
-
-Interpreting recent historical events is a foundational component in any [openaps](https://github.com/openaps/openaps) project, and this plugin aspires to be a central place for documenting and testing the intricacies of that task.
-
-The `mmhistorytools` plugin vends multiple commands. Each command does a single pass over a set of history and is intentionally limited in scope, prioritizing testability above performance.
-
-## Testing
-
-Unit tests can be run via setuptools:
-
-```bash
-$ python setup.py test
-```
-
 ## Contributing
 Contributions are welcome and encouraged in the form of bugs and pull requests.
+
+### Testing
+ 
+ Unit tests can be run manually via setuptools. This is also handled by TravisCI after opening a pull request.
+ 
+ ```bash
+ $ python setup.py test
+ ```

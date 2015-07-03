@@ -5,10 +5,11 @@ import json
 import os
 import unittest
 
-from openapscontrib.mmhistorytools.historytools import CleanHistory, TrimHistory
+from openapscontrib.mmhistorytools.historytools import CleanHistory
 from openapscontrib.mmhistorytools.historytools import NormalizeRecords
 from openapscontrib.mmhistorytools.historytools import ReconcileHistory
 from openapscontrib.mmhistorytools.historytools import ResolveHistory
+from openapscontrib.mmhistorytools.historytools import TrimHistory
 from openapscontrib.mmhistorytools.models import Bolus, Meal, TempBasal
 
 
@@ -17,11 +18,16 @@ def get_file_at_path(path):
 
 
 class TrimHistoryTestCase(unittest.TestCase):
-    def test_trim_no_args(self):
-        with open(get_file_at_path('fixtures/square_bolus.json')) as fp:
-            pump_history = json.load(fp)
+    pump_history = None
 
-        h = TrimHistory(pump_history)
+    def setUp(self):
+        super(TrimHistoryTestCase, self).setUp()
+
+        with open(get_file_at_path('fixtures/square_bolus.json')) as fp:
+            self.pump_history = json.load(fp)
+
+    def test_trim_no_args(self):
+        h = TrimHistory(self.pump_history)
 
         self.assertListEqual(
             [
@@ -37,11 +43,8 @@ class TrimHistoryTestCase(unittest.TestCase):
         )
 
     def test_trim_inside_range(self):
-        with open(get_file_at_path('fixtures/square_bolus.json')) as fp:
-            pump_history = json.load(fp)
-
         h = TrimHistory(
-            pump_history,
+            self.pump_history,
             start_datetime=datetime(2015, 06, 19, 21, 30),
             end_datetime=datetime(2015, 06, 19, 22)
         )
@@ -57,11 +60,8 @@ class TrimHistoryTestCase(unittest.TestCase):
         )
 
     def test_trim_outside_range(self):
-        with open(get_file_at_path('fixtures/square_bolus.json')) as fp:
-            pump_history = json.load(fp)
-
         h = TrimHistory(
-            pump_history,
+            self.pump_history,
             start_datetime=datetime(2015, 06, 20, 04),
             end_datetime=datetime(2015, 06, 20, 8)
         )
@@ -72,11 +72,8 @@ class TrimHistoryTestCase(unittest.TestCase):
         )
 
     def test_trim_outside_range_inclusive(self):
-        with open(get_file_at_path('fixtures/square_bolus.json')) as fp:
-            pump_history = json.load(fp)
-
         h = TrimHistory(
-            pump_history,
+            self.pump_history,
             start_datetime=datetime(2015, 06, 19, 04),
             end_datetime=datetime(2015, 06, 20, 04)
         )
@@ -96,11 +93,8 @@ class TrimHistoryTestCase(unittest.TestCase):
         )
 
     def test_trim_end_boundary(self):
-        with open(get_file_at_path('fixtures/square_bolus.json')) as fp:
-            pump_history = json.load(fp)
-
         h = TrimHistory(
-            pump_history,
+            self.pump_history,
             start_datetime=datetime(2015, 06, 19, 22),
             end_datetime=datetime(2015, 06, 20, 04)
         )
@@ -116,11 +110,8 @@ class TrimHistoryTestCase(unittest.TestCase):
         )
 
     def test_trim_end_boundary_one_arg(self):
-        with open(get_file_at_path('fixtures/square_bolus.json')) as fp:
-            pump_history = json.load(fp)
-
         h = TrimHistory(
-            pump_history,
+            self.pump_history,
             start_datetime=datetime(2015, 06, 19, 22)
         )
 
@@ -134,11 +125,8 @@ class TrimHistoryTestCase(unittest.TestCase):
         )
 
     def test_trim_start_boundary(self):
-        with open(get_file_at_path('fixtures/square_bolus.json')) as fp:
-            pump_history = json.load(fp)
-
         h = TrimHistory(
-            pump_history,
+            self.pump_history,
             start_datetime=datetime(2015, 06, 19, 04),
             end_datetime=datetime(2015, 06, 19, 22)
         )
@@ -155,11 +143,8 @@ class TrimHistoryTestCase(unittest.TestCase):
         )
 
     def test_trim_start_boundary_one_arg(self):
-        with open(get_file_at_path('fixtures/square_bolus.json')) as fp:
-            pump_history = json.load(fp)
-
         h = TrimHistory(
-            pump_history,
+            self.pump_history,
             end_datetime=datetime(2015, 06, 19, 22)
         )
 

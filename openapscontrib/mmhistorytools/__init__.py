@@ -74,7 +74,7 @@ class BaseUse(Use):
         """
         parser.add_argument(
             'infile',
-            nargs='?',
+            nargs=argparse.OPTIONAL,
             default='-',
             help='JSON-encoded history data'
         )
