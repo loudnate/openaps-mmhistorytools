@@ -254,7 +254,8 @@ integers representing the number of minutes from `--zero-at`.
         parser.add_argument(
             '--zero-at',
             default=None,
-            help='The timestamp by which to adjust record timestamps'
+            help='The timestamp by which to adjust record timestamps. This can be either a '
+                 'filename to a read_clock report or a timestamp string value.'
         )
 
     def get_params(self, args):
@@ -269,9 +270,17 @@ integers representing the number of minutes from `--zero-at`.
 
     def get_program(self, params):
         args, kwargs = super(normalize, self).get_program(params)
+
+        zero_at = params.get('zero_at')
+
+        try:
+            zero_at = _opt_json_file(zero_at)
+        except argparse.ArgumentTypeError:
+            pass
+
         kwargs.update(
             basal_schedule=_opt_json_file(params.get('basal_profile')),
-            zero_datetime=_opt_date(params.get('zero_at'))
+            zero_datetime=_opt_date(zero_at)
         )
 
         return args, kwargs
