@@ -114,10 +114,10 @@ class trim(BaseUse):
     def get_params(self, args):
         params = super(trim, self).get_params(args)
 
-        if args.start:
+        if 'start' in args:
             params.update(start=args.start)
 
-        if args.end:
+        if 'end' in args:
             params.update(end=args.end)
 
         return params
@@ -166,10 +166,10 @@ Tasks performed by this pass:
     def get_params(self, args):
         params = super(clean, self).get_params(args)
 
-        if args.start:
+        if 'start' in args:
             params.update(start=args.start)
 
-        if args.end:
+        if 'end' in args:
             params.update(end=args.end)
 
         return params
@@ -260,10 +260,10 @@ integers representing the number of minutes from `--zero-at`.
 
     def get_params(self, args):
         params = super(normalize, self).get_params(args)
-        if args.basal_profile:
+        if 'basal_profile' in args:
             params.update(basal_profile=args.basal_profile)
 
-        if args.zero_at:
+        if 'zero_at' in args:
             params.update(zero_at=args.zero_at)
 
         return params
