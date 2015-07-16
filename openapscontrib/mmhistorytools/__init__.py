@@ -114,10 +114,10 @@ class trim(BaseUse):
     def get_params(self, args):
         params = super(trim, self).get_params(args)
 
-        if args.start:
+        if 'start' in args and args.start:
             params.update(start=args.start)
 
-        if args.end:
+        if 'end' in args and args.end:
             params.update(end=args.end)
 
         return params
@@ -166,10 +166,10 @@ Tasks performed by this pass:
     def get_params(self, args):
         params = super(clean, self).get_params(args)
 
-        if args.start:
+        if 'start' in args and args.start:
             params.update(start=args.start)
 
-        if args.end:
+        if 'end' in args and args.end:
             params.update(end=args.end)
 
         return params
@@ -254,24 +254,33 @@ integers representing the number of minutes from `--zero-at`.
         parser.add_argument(
             '--zero-at',
             default=None,
-            help='The timestamp by which to adjust record timestamps'
+            help='The timestamp by which to adjust record timestamps. This can be either a '
+                 'filename to a read_clock report or a timestamp string value.'
         )
 
     def get_params(self, args):
         params = super(normalize, self).get_params(args)
-        if args.basal_profile:
+        if 'basal_profile' in args and args.basal_profile:
             params.update(basal_profile=args.basal_profile)
 
-        if args.zero_at:
+        if 'zero_at' in args and args.zero_at:
             params.update(zero_at=args.zero_at)
 
         return params
 
     def get_program(self, params):
         args, kwargs = super(normalize, self).get_program(params)
+
+        zero_at = params.get('zero_at')
+
+        try:
+            zero_at = _opt_json_file(zero_at)
+        except argparse.ArgumentTypeError:
+            pass
+
         kwargs.update(
             basal_schedule=_opt_json_file(params.get('basal_profile')),
-            zero_datetime=_opt_date(params.get('zero_at'))
+            zero_datetime=_opt_date(zero_at)
         )
 
         return args, kwargs

@@ -83,9 +83,17 @@ Tasks performed by this pass:
 
 ## Examples
 
-All `infile` arguments default to accept stdin, so commands can be chained like so:
+Add a report flow to process pump history for analysis:
+```
+$ openaps report add clean_history.json JSON munge clean pump_history.json
+$ openaps report add reconciled_history.json JSON munge reconcile clean_history.json
+$ openaps report add resolved_history.json JSON munge resolve reconciled_history.json
+$ openaps report add normalized_history.json JSON munge normalize resolved_history.json --basal-profile basal.json --zero-at read_clock.json
+```
+
+All `infile` arguments default to accept stdin, so commands can be chained to simplify testing:
 ```bash
-$ openaps use pump read_history_data 0 | openaps use munge trim --start 2015-07-03T10:15:00 | openaps use munge clean | openaps use munge reconcile | openaps use munge resolve | openaps use munge normalize --basal-profile basal.json --zero-at 2015-07-03T14:15:00
+$ openaps use pump iter_glucose_hours 4 | openaps use munge clean | openaps use munge reconcile | openaps use munge resolve | openaps use munge normalize --basal-profile basal.json --zero-at read_clock.json
 ```
 
 ## Contributing
