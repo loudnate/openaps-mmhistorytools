@@ -616,14 +616,14 @@ class ResolveHistoryTestCase(unittest.TestCase):
                     end_at=_("2015-06-06T20:46:06"),
                     amount=32,
                     unit="g",
-                    description="BolusWizard"
+                    description="BolusWizard: 32g"
                 ),
                 TempBasal(
                     start_at=_("2015-06-06T20:39:45"),
                     end_at=_("2015-06-06T21:09:45"),
                     amount=150,
                     unit="percent",
-                    description="TempBasal 150 percent"
+                    description="TempBasal: 150% over 30min"
                 ),
                 Bolus(
                     start_at=_("2015-06-06T20:32:26"),
@@ -637,21 +637,21 @@ class ResolveHistoryTestCase(unittest.TestCase):
                     end_at=_("2015-06-06T20:05:17"),
                     amount=200,
                     unit="percent",
-                    description="TempBasal 200 percent"
+                    description="TempBasal: 200% over 60min"
                 ),
                 Meal(
                     start_at=_("2015-06-06T18:10:28"),
                     end_at=_("2015-06-06T18:10:28"),
                     amount=29,
                     unit="g",
-                    description="JournalEntryMealMarker"
+                    description="JournalEntryMealMarker: 29g"
                 ),
                 Meal(
                     start_at=_("2015-06-06T17:55:00"),
                     end_at=_("2015-06-06T17:55:00"),
                     amount=37,
                     unit="g",
-                    description="JournalEntryMealMarker"
+                    description="JournalEntryMealMarker: 37g"
                 ),
                 Bolus(
                     start_at=_("2015-06-06T16:07:36"),
@@ -672,7 +672,7 @@ class ResolveHistoryTestCase(unittest.TestCase):
                     end_at=_("2015-06-06T16:07:35"),
                     amount=24,
                     unit="g",
-                    description="BolusWizard"
+                    description="BolusWizard: 24g"
                 ),
                 Bolus(
                     start_at=_("2015-06-06T16:01:28"),
@@ -686,7 +686,7 @@ class ResolveHistoryTestCase(unittest.TestCase):
                     end_at=_("2015-06-06T16:01:28"),
                     amount=42,
                     unit="g",
-                    description="BolusWizard"
+                    description="BolusWizard: 42g"
                 ),
                 Bolus(
                     start_at=_("2015-06-06T15:00:24"),
@@ -721,7 +721,7 @@ class ResolveHistoryTestCase(unittest.TestCase):
                     end_at=_("2015-06-19T23:04:25"),
                     amount=27,
                     unit="g",
-                    description="BolusWizard"
+                    description="BolusWizard: 27g"
                 ),
                 Bolus(
                     start_at=_("2015-06-19T21:31:15"),
@@ -742,7 +742,7 @@ class ResolveHistoryTestCase(unittest.TestCase):
                     end_at=_("2015-06-19T21:31:15"),
                     amount=56,
                     unit="g",
-                    description="BolusWizard"
+                    description="BolusWizard: 56g"
                 ),
                 Bolus(
                     start_at=_("2015-06-19T21:02:39"),
@@ -925,15 +925,15 @@ class NormalizeRecordsTestCase(BasalScheduleTestCase):
         self.assertListEqual(
             [
                 TempBasal(
-                    start_at=datetime(2015, 01, 01, 23),
-                    end_at=datetime(2015, 01, 01, 23, 59, 59),
+                    start_at=datetime(2015, 01, 02),
+                    end_at=datetime(2015, 01, 02, 02),
                     amount=-0.45,
                     unit="U/hour",
                     description=""
                 ),
                 TempBasal(
-                    start_at=datetime(2015, 01, 02),
-                    end_at=datetime(2015, 01, 02, 02),
+                    start_at=datetime(2015, 01, 01, 23),
+                    end_at=datetime(2015, 01, 01, 23, 59, 59),
                     amount=-0.45,
                     unit="U/hour",
                     description=""
@@ -974,7 +974,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     "end_at": -11,
                     "amount": 10,
                     "unit": "g",
-                    "description": "BolusWizard"
+                    "description": "BolusWizard: 10g"
                 },
                 {
                     "type": "Bolus",
@@ -990,7 +990,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     "end_at": -13,
                     "amount": 30,
                     "unit": "g",
-                    "description": "BolusWizard"
+                    "description": "BolusWizard: 30g"
                 },
                 {
                     "type": "Bolus",
@@ -1006,7 +1006,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     "end_at": -23,
                     "amount": 65,
                     "unit": "g",
-                    "description": "BolusWizard"
+                    "description": "BolusWizard: 65g"
                 },
                 {
                     "type": "Bolus",
@@ -1054,7 +1054,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     "end_at": 0,
                     "amount": 27,
                     "unit": "g",
-                    "description": "BolusWizard"
+                    "description": "BolusWizard: 27g"
                 },
                 {
                     "type": "Bolus",
@@ -1078,7 +1078,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     "end_at": -93,
                     "amount": 56,
                     "unit": "g",
-                    "description": "BolusWizard"
+                    "description": "BolusWizard: 56g"
                 },
                 {
                     "type": "Bolus",
@@ -1126,7 +1126,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     "end_at": -4,
                     "amount": 32,
                     "unit": "g",
-                    "description": "BolusWizard"
+                    "description": "BolusWizard: 32g"
                 },
                 {
                     "type": "TempBasal",
@@ -1134,7 +1134,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     "end_at": -1,
                     "amount": 1.2 - 0.8,
                     "unit": "U/hour",
-                    "description": "TempBasal 150 percent"
+                    "description": "TempBasal: 150% over 10min"
                 },
                 {
                     "type": "Bolus",
@@ -1150,7 +1150,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     "end_at": -45,
                     "amount": 1.6 - 0.8,
                     "unit": "U/hour",
-                    "description": "TempBasal 200 percent"
+                    "description": "TempBasal: 200% over 60min"
                 },
                 {
                     "type": "Meal",
@@ -1158,7 +1158,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     "end_at": -160,
                     "amount": 29,
                     "unit": "g",
-                    "description": "JournalEntryMealMarker"
+                    "description": "JournalEntryMealMarker: 29g"
                 },
                 {
                     "type": "Meal",
@@ -1166,7 +1166,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     "end_at": -175,
                     "amount": 37,
                     "unit": "g",
-                    "description": "JournalEntryMealMarker"
+                    "description": "JournalEntryMealMarker: 37g"
                 },
                 {
                     "type": "Bolus",
@@ -1190,7 +1190,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     "end_at": -283,
                     "amount": 24,
                     "unit": "g",
-                    "description": "BolusWizard"
+                    "description": "BolusWizard: 24g"
                 },
                 {
                     "type": "Bolus",
@@ -1206,7 +1206,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     "end_at": -289,
                     "amount": 42,
                     "unit": "g",
-                    "description": "BolusWizard"
+                    "description": "BolusWizard: 42g"
                 },
                 {
                     "type": "Bolus",
@@ -1262,7 +1262,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     "end_at": -23,
                     "amount": 38,
                     "unit": "g",
-                    "description": "BolusWizard"
+                    "description": "BolusWizard: 38g"
                 },
                 {
                     "type": "TempBasal",
@@ -1270,7 +1270,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     "end_at": -1,
                     "amount": 0.96 - 0.8,
                     "unit": "U/hour",
-                    "description": "TempBasal 120 percent"
+                    "description": "TempBasal: 120% over 37min"
                 },
                 {
                     "type": "TempBasal",
@@ -1294,7 +1294,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     "end_at": -44,
                     "amount": 0.9 - 0.75,
                     "unit": "U/hour",
-                    "description": "TempBasal 120 percent"
+                    "description": "TempBasal: 120% over 16min"
                 },
                 {
                     "type": "Bolus",
@@ -1342,7 +1342,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     "end_at": 3,
                     "amount": 27,
                     "unit": "g",
-                    "description": "BolusWizard"
+                    "description": "BolusWizard: 27g"
                 },
                 {
                     "type": "Meal",
@@ -1350,7 +1350,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     "end_at": -95,
                     "amount": 27,
                     "unit": "g",
-                    "description": "JournalEntryMealMarker"
+                    "description": "JournalEntryMealMarker: 27g"
                 },
                 {
                     "type": "Bolus",
@@ -1366,7 +1366,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     "end_at": -155,
                     "amount": 30,
                     "unit": "g",
-                    "description": "BolusWizard"
+                    "description": "BolusWizard: 30g"
                 },
                 {
                     "type": "Bolus",
@@ -1390,7 +1390,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     "end_at": -158,
                     "amount": 70,
                     "unit": "g",
-                    "description": "BolusWizard"
+                    "description": "BolusWizard: 70g"
                 },
                 {
                     "type": "Bolus",
@@ -1406,7 +1406,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     "end_at": -328,
                     "amount": 0.8,
                     "unit": "U/hour",
-                    "description": "TempBasal 200 percent"
+                    "description": "TempBasal: 200% over 96min"
                 },
                 {
                     "type": "TempBasal",
@@ -1414,7 +1414,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     "end_at": -360,
                     "amount": 0.75,
                     "unit": "U/hour",
-                    "description": "TempBasal 200 percent"
+                    "description": "TempBasal: 200% over 96min"
                 },
                 {
                     "type": "TempBasal",
@@ -1446,7 +1446,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     "end_at": -451,
                     "amount": 48,
                     "unit": "g",
-                    "description": "BolusWizard"
+                    "description": "BolusWizard: 48g"
                 },
                 {
                     "type": "TempBasal",
@@ -1454,7 +1454,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     "end_at": -425,
                     "amount": 0.75,
                     "unit": "U/hour",
-                    "description": "TempBasal 200 percent"
+                    "description": "TempBasal: 200% over 82min"
                 },
                 {
                     "type": "Bolus",
@@ -1478,7 +1478,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     "end_at": -571,
                     "amount": 52,
                     "unit": "g",
-                    "description": "BolusWizard"
+                    "description": "BolusWizard: 52g"
                 },
                 {
                     "type": "TempBasal",
@@ -1486,7 +1486,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                     "end_at": -556,
                     "amount": -0.8500000000000001,
                     "unit": "U/hour",
-                    "description": "TempBasal 0 percent"
+                    "description": "TempBasal: 0% over 60min"
                 },
                 {
                     "type": "TempBasal",

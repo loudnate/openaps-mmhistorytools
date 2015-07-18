@@ -342,7 +342,7 @@ class ResolveHistory(ParseHistory):
                 end_at=start_at,
                 amount=carb_input,
                 unit=Unit.grams,
-                description=event["_type"]
+                description='{}: {}g'.format(event["_type"], carb_input)
             )
 
     def _decode_pumpresume(self, event):
@@ -381,7 +381,11 @@ class ResolveHistory(ParseHistory):
                 end_at=end_at,
                 amount=amount,
                 unit=unit,
-                description="TempBasal {} {}".format(amount, unit)
+                description="TempBasal: {}{} over {}min".format(
+                    amount,
+                    '%' if unit == Unit.percent_of_basal else unit,
+                    self._temp_basal_duration
+                )
             )
 
     def _decode_tempbasalduration(self, event):
@@ -499,15 +503,17 @@ class NormalizeRecords(object):
         # single-day call
         if start_time > end_time:
             return self._basal_adjustments_in_range(
-                start_datetime,
-                start_datetime.replace(hour=23, minute=59, second=59),
-                percent=percent,
-                absolute=absolute
-            ) + self._basal_adjustments_in_range(
                 end_datetime.replace(hour=0, minute=0, second=0),
                 end_datetime,
                 percent=percent,
-                absolute=absolute
+                absolute=absolute,
+                description=description
+            ) + self._basal_adjustments_in_range(
+                start_datetime,
+                start_datetime.replace(hour=23, minute=59, second=59),
+                percent=percent,
+                absolute=absolute,
+                description=description
             )
 
         temp_basal_events = []
