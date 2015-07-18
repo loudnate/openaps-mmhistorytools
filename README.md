@@ -93,7 +93,7 @@ $ openaps report add normalized_history.json JSON munge normalize resolved_histo
 
 All `infile` arguments default to accept stdin, so commands can be chained to simplify testing:
 ```bash
-$ openaps use pump iter_glucose_hours 4 | openaps use munge clean | openaps use munge reconcile | openaps use munge resolve | openaps use munge normalize --basal-profile basal.json --zero-at read_clock.json
+$ openaps use pump iter_pump_hours 4 | openaps use munge clean | openaps use munge reconcile | openaps use munge resolve | openaps use munge normalize --basal-profile basal.json --zero-at read_clock.json
 ```
 
 ## Contributing
