@@ -1515,7 +1515,3 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
             ],
             records
         )
-
-
-if __name__ == "__main__":
-    unittest.main()

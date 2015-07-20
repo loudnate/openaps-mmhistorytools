@@ -14,7 +14,7 @@ exec(open('openapscontrib/mmhistorytools/version.py').read())
 setup(
     name='openapscontrib.mmhistorytools',
     version=__version__,
-    url='http://github.com/loudnate/openaps-mmhistorytools',
+    url='https://github.com/loudnate/openaps-mmhistorytools',
     download_url='http://pypi.python.org/pypi/openapscontrib.mmhistorytools',
     license='MIT',
     author='Nathan Racklyeft',
