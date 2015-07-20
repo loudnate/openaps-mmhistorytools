@@ -11,7 +11,8 @@ import json
 
 from openaps.uses.use import Use
 
-from historytools import CleanHistory, ReconcileHistory, ResolveHistory, NormalizeRecords
+from historytools import TrimHistory, CleanHistory, ReconcileHistory
+from historytools import ResolveHistory, NormalizeRecords
 
 
 # set_config is needed by openaps for all vendors.
@@ -37,9 +38,7 @@ def display_device(device):
 # agp as a vendor.  Return a list of classes which inherit from Use,
 # or are compatible with it:
 def get_uses(device, config):
-    # make an Example, openaps use command
-    # add your Uses here!
-    return [clean, reconcile, resolve, normalize]
+    return [trim, clean, reconcile, resolve, normalize]
 
 
 def _opt_date(timestamp):
@@ -75,7 +74,7 @@ class BaseUse(Use):
         """
         parser.add_argument(
             'infile',
-            nargs='?',
+            nargs=argparse.OPTIONAL,
             default='-',
             help='JSON-encoded history data'
         )
@@ -94,16 +93,12 @@ class BaseUse(Use):
         return [json.load(argparse.FileType('r')(params['infile']))], dict()
 
 
-class clean(BaseUse):
-    """Resolve inconsistencies from a sequence of pump history
+# noinspection PyPep8Naming
+class trim(BaseUse):
+    """Trims a sequence of pump history to a specified time window"""
 
-Tasks performed by this pass:
- - De-duplicates BolusWizard records
- - Creates PumpSuspend and PumpResume records to complete missing pairs
- - Removes any records whose timestamps don't fall into the specified window
-    """
     def configure_app(self, app, parser):
-        super(clean, self).configure_app(app, parser)
+        super(trim, self).configure_app(app, parser)
 
         parser.add_argument(
             '--start',
@@ -117,12 +112,64 @@ Tasks performed by this pass:
         )
 
     def get_params(self, args):
-        params = super(clean, self).get_params(args)
+        params = super(trim, self).get_params(args)
 
-        if args.start:
+        if 'start' in args and args.start:
             params.update(start=args.start)
 
-        if args.end:
+        if 'end' in args and args.end:
+            params.update(end=args.end)
+
+        return params
+
+    def get_program(self, params):
+        args, kwargs = super(trim, self).get_program(params)
+        kwargs.update(
+            start_datetime=_opt_date(params.get('start')),
+            end_datetime=_opt_date(params.get('end'))
+        )
+
+        return args, kwargs
+
+    def main(self, args, app):
+        args, kwargs = self.get_program(self.get_params(args))
+
+        tool = TrimHistory(*args, **kwargs)
+
+        return tool.trimmed_history
+
+
+# noinspection PyPep8Naming
+class clean(BaseUse):
+    """Resolve inconsistencies from a sequence of pump history
+
+Tasks performed by this pass:
+ - De-duplicates BolusWizard records
+ - Creates PumpSuspend and PumpResume records to complete missing pairs
+    """
+    def configure_app(self, app, parser):
+        super(clean, self).configure_app(app, parser)
+
+        parser.add_argument(
+            '--start',
+            default=None,
+            help='The initial timestamp of the known window, used to simulate missing '
+                 'suspend/resume events'
+        )
+        parser.add_argument(
+            '--end',
+            default=None,
+            help='The final timestamp of the history window, used to simulate missing '
+                 'suspend/resume events'
+        )
+
+    def get_params(self, args):
+        params = super(clean, self).get_params(args)
+
+        if 'start' in args and args.start:
+            params.update(start=args.start)
+
+        if 'end' in args and args.end:
             params.update(end=args.end)
 
         return params
@@ -144,6 +191,7 @@ Tasks performed by this pass:
         return tool.clean_history
 
 
+# noinspection PyPep8Naming
 class reconcile(BaseUse):
     """Reconcile record dependencies from a sequence of pump history
 
@@ -159,6 +207,7 @@ Tasks performed by this pass:
         return tool.reconciled_history
 
 
+# noinspection PyPep8Naming
 class resolve(BaseUse):
     """Converts events in a sequence of pump history to generalized record types
 
@@ -183,6 +232,7 @@ Events that are not related to the record types or seem to have no effect are dr
         return tool.resolved_records
 
 
+# noinspection PyPep8Naming
 class normalize(BaseUse):
     """Adjusts the time and amount of records relative to a basal schedule and a timestamp
 
@@ -204,24 +254,33 @@ integers representing the number of minutes from `--zero-at`.
         parser.add_argument(
             '--zero-at',
             default=None,
-            help='The timestamp by which to adjust record timestamps'
+            help='The timestamp by which to adjust record timestamps. This can be either a '
+                 'filename to a read_clock report or a timestamp string value.'
         )
 
     def get_params(self, args):
         params = super(normalize, self).get_params(args)
-        if args.basal_profile:
+        if 'basal_profile' in args and args.basal_profile:
             params.update(basal_profile=args.basal_profile)
 
-        if args.zero_at:
+        if 'zero_at' in args and args.zero_at:
             params.update(zero_at=args.zero_at)
 
         return params
 
     def get_program(self, params):
         args, kwargs = super(normalize, self).get_program(params)
+
+        zero_at = params.get('zero_at')
+
+        try:
+            zero_at = _opt_json_file(zero_at)
+        except argparse.ArgumentTypeError:
+            pass
+
         kwargs.update(
             basal_schedule=_opt_json_file(params.get('basal_profile')),
-            zero_datetime=_opt_date(params.get('zero_at'))
+            zero_datetime=_opt_date(zero_at)
         )
 
         return args, kwargs
@@ -232,4 +291,3 @@ integers representing the number of minutes from `--zero-at`.
         tool = NormalizeRecords(*args, **kwargs)
 
         return tool.normalized_records
-
