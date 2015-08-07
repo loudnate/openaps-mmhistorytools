@@ -213,7 +213,7 @@ class ReconcileHistory(ParseHistory):
 
                 # Adjust start time
                 for new_event in (new_basal_duration_event, new_basal_rate_event):
-                    for key in ("date", "_date", "timestamp"):
+                    for key in ("_date", "timestamp"):
                         new_event[key] = event[key]
                     new_event["_description"] = "{} generated due to interleaved PumpSuspend" \
                                                 " event".format(new_event["_type"])

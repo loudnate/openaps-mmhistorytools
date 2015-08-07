@@ -9,7 +9,6 @@
     "_head": "5b00", 
     "unabsorbed_insulin_total": 0.0, 
     "correction_estimate": 0.0, 
-    "date": 1434744159000.0, 
     "_date": "678215730f", 
     "bolus_estimate": 3.3, 
     "bg_target_low": 90, 
@@ -21,7 +20,6 @@
   {
     "_type": "LowReservoir", 
     "_description": "LowReservoir 2015-06-19T20:41:15 head[2], body[0] op[0x34]", 
-    "date": 1434742875000.0, 
     "timestamp": "2015-06-19T20:41:15", 
     "_body": "", 
     "_head": "34c8", 
@@ -33,7 +31,6 @@
     "_type": "SensorAlert", 
     "alarm_description": "Low Glucose", 
     "_description": "SensorAlert 2015-06-19T19:35:43 head[3], body[0] op[0x0b]", 
-    "date": 1434738943000.0, 
     "timestamp": "2015-06-19T19:35:43", 
     "_body": "", 
     "_head": "0b6652", 
@@ -43,7 +40,6 @@
   {
     "_type": "JournalEntryMealMarker", 
     "_description": "JournalEntryMealMarker 2015-06-19T19:24:47 head[2], body[2] op[0x40]", 
-    "date": 1434738287000.0, 
     "timestamp": "2015-06-19T19:24:47", 
     "_body": "1b01", 
     "carb_input": 27, 
@@ -54,7 +50,6 @@
     "_type": "BGReceived", 
     "link": "783436", 
     "_description": "BGReceived 2015-06-19T19:21:56 head[2], body[3] op[0x3f]", 
-    "date": 1434738116000.0, 
     "timestamp": "2015-06-19T19:21:56", 
     "_body": "783436", 
     "_head": "3f07", 
@@ -64,7 +59,6 @@
   {
     "_type": "CalBGForPH", 
     "_description": "CalBGForPH 2015-06-19T19:21:56 head[2], body[0] op[0x0a]", 
-    "date": 1434738116000.0, 
     "timestamp": "2015-06-19T19:21:56", 
     "_body": "", 
     "_head": "0a3f", 
@@ -76,7 +70,6 @@
     "_type": "SensorAlert", 
     "alarm_description": "Cal Reminder", 
     "_description": "SensorAlert 2015-06-19T18:52:00 head[3], body[0] op[0x0b]", 
-    "date": 1434736320000.0, 
     "timestamp": "2015-06-19T18:52:00", 
     "_body": "", 
     "_head": "0b6900", 
@@ -87,7 +80,6 @@
     "_type": "SensorAlert", 
     "alarm_description": "Low Glucose", 
     "_description": "SensorAlert 2015-06-19T18:32:17 head[3], body[0] op[0x0b]", 
-    "date": 1434735137000.0, 
     "timestamp": "2015-06-19T18:32:17", 
     "_body": "", 
     "_head": "0b664e", 
@@ -163,7 +155,6 @@
     "duration": 0, 
     "amount": 1.6, 
     "unabsorbed": 3.7, 
-    "date": 1434734717000.0, 
     "type": "normal", 
     "_date": "519952130f"
   }, 
@@ -177,7 +168,6 @@
     "_head": "5b00", 
     "unabsorbed_insulin_total": 0.0, 
     "correction_estimate": 0.0, 
-    "date": 1434734717000.0, 
     "_date": "519912130f", 
     "bolus_estimate": 3.7, 
     "bg_target_low": 90, 
@@ -196,7 +186,6 @@
     "duration": 0, 
     "amount": 3.0, 
     "unabsorbed": 0.8, 
-    "date": 1434734530000.0, 
     "type": "normal", 
     "_date": "4a9692730f"
   }, 
@@ -265,7 +254,6 @@
     "duration": 90, 
     "amount": 2.0, 
     "unabsorbed": 0.8, 
-    "date": 1434734650000.0, 
     "type": "square", 
     "_date": "4a98b2730f"
   }, 
@@ -279,7 +267,6 @@
     "_head": "5b00", 
     "unabsorbed_insulin_total": 0.0, 
     "correction_estimate": 0.0, 
-    "date": 1434734530000.0, 
     "_date": "4a9612730f", 
     "bolus_estimate": 8.7, 
     "appended": [
@@ -353,7 +340,6 @@
     "_head": "5b00", 
     "unabsorbed_insulin_total": 0.0, 
     "correction_estimate": 0.0, 
-    "date": 1434734504000.0, 
     "_date": "6c9512730f", 
     "bolus_estimate": 8.7, 
     "appended": [
@@ -427,7 +413,6 @@
     "_head": "5b00", 
     "unabsorbed_insulin_total": 0.0, 
     "correction_estimate": 0.0, 
-    "date": 1434734495000.0, 
     "_date": "639512730f", 
     "bolus_estimate": 8.7, 
     "appended": [
@@ -501,7 +486,6 @@
     "_head": "5b00", 
     "unabsorbed_insulin_total": 0.0, 
     "correction_estimate": 0.0, 
-    "date": 1434734492000.0, 
     "_date": "609512730f", 
     "bolus_estimate": 8.7, 
     "bg_target_low": 90, 
@@ -515,7 +499,6 @@
     "_type": "SensorAlert", 
     "alarm_description": "Low Glucose", 
     "_description": "SensorAlert 2015-06-19T18:11:50 head[3], body[0] op[0x0b]", 
-    "date": 1434733910000.0, 
     "timestamp": "2015-06-19T18:11:50", 
     "_body": "", 
     "_head": "0b6656", 
@@ -583,7 +566,6 @@
     "duration": 0, 
     "amount": 1.3, 
     "unabsorbed": 0.3, 
-    "date": 1434728815000.0, 
     "type": "normal", 
     "_date": "77ae50730f"
   }, 
@@ -597,7 +579,6 @@
     "_head": "5b00", 
     "unabsorbed_insulin_total": 0.0, 
     "correction_estimate": 0.0, 
-    "date": 1434728815000.0, 
     "_date": "77ae10730f", 
     "bolus_estimate": 0.0, 
     "bg_target_low": 90, 
@@ -611,7 +592,6 @@
     "_type": "SensorAlert", 
     "alarm_description": "High Glucose", 
     "_description": "SensorAlert 2015-06-19T16:05:42 head[3], body[0] op[0x0b]", 
-    "date": 1434726342000.0, 
     "timestamp": "2015-06-19T16:05:42", 
     "_body": "", 
     "_head": "0b65b4", 
@@ -621,7 +601,6 @@
   {
     "_type": "BasalProfileStart", 
     "_description": "BasalProfileStart 2015-06-19T15:32:59 head[2], body[3] op[0x7b]", 
-    "date": 1434724379000.0, 
     "timestamp": "2015-06-19T15:32:59", 
     "_body": "1e2000", 
     "offset": 54000000, 
@@ -632,7 +611,6 @@
   {
     "_type": "PumpResume", 
     "_description": "PumpResume 2015-06-19T13:56:00 head[2], body[0] op[0x1f]", 
-    "date": 1434718560000.0, 
     "timestamp": "2015-06-19T13:56:00", 
     "_body": "", 
     "_head": "1f20", 
@@ -641,7 +619,6 @@
   {
     "_type": "PumpSuspend", 
     "_description": "PumpSuspend 2015-06-19T13:55:58 head[2], body[0] op[0x1e]", 
-    "date": 1434718558000.0, 
     "timestamp": "2015-06-19T13:55:58", 
     "_body": "", 
     "_head": "1e01", 
@@ -657,7 +634,6 @@
     "duration": 0, 
     "amount": 1.8, 
     "unabsorbed": 2.5, 
-    "date": 1434716957000.0, 
     "type": "normal", 
     "_date": "519d8d730f"
   }, 
@@ -730,7 +706,6 @@
     "duration": 150, 
     "amount": 0.5, 
     "unabsorbed": 2.5, 
-    "date": 1434717030000.0, 
     "type": "square", 
     "_date": "5e9ead730f"
   }, 
@@ -744,7 +719,6 @@
     "_head": "5b00", 
     "unabsorbed_insulin_total": 0.0, 
     "correction_estimate": 0.0, 
-    "date": 1434716957000.0, 
     "_date": "519d0d730f", 
     "bolus_estimate": 6.0, 
     "bg_target_low": 90, 
@@ -757,7 +731,6 @@
     "_type": "TempBasalDuration", 
     "duration (min)": 180, 
     "_description": "TempBasalDuration 2015-06-19T12:32:59 head[2], body[0] op[0x16]", 
-    "date": 1434713579000.0, 
     "timestamp": "2015-06-19T12:32:59", 
     "_body": "", 
     "_head": "1606", 
@@ -767,7 +740,6 @@
     "_type": "TempBasal", 
     "temp": "percent", 
     "_description": "TempBasal 2015-06-19T12:32:59 head[2], body[1] op[0x33]", 
-    "date": 1434713579000.0, 
     "timestamp": "2015-06-19T12:32:59", 
     "_body": "08", 
     "_head": "33c8", 
@@ -777,7 +749,6 @@
   {
     "_type": "BasalProfileStart", 
     "_description": "BasalProfileStart 2015-06-19T12:32:41 head[2], body[3] op[0x7b]", 
-    "date": 1434713561000.0, 
     "timestamp": "2015-06-19T12:32:41", 
     "_body": "181e00", 
     "offset": 43200000, 
@@ -789,7 +760,6 @@
     "_type": "TempBasalDuration", 
     "duration (min)": 0, 
     "_description": "TempBasalDuration 2015-06-19T12:32:41 head[2], body[0] op[0x16]", 
-    "date": 1434713561000.0, 
     "timestamp": "2015-06-19T12:32:41", 
     "_body": "", 
     "_head": "1600", 
@@ -799,7 +769,6 @@
     "_type": "TempBasal", 
     "temp": "percent", 
     "_description": "TempBasal 2015-06-19T12:32:41 head[2], body[1] op[0x33]", 
-    "date": 1434713561000.0, 
     "timestamp": "2015-06-19T12:32:41", 
     "_body": "08", 
     "_head": "3300", 
@@ -810,7 +779,6 @@
     "_type": "TempBasalDuration", 
     "duration (min)": 90, 
     "_description": "TempBasalDuration 2015-06-19T12:31:46 head[2], body[0] op[0x16]", 
-    "date": 1434713506000.0, 
     "timestamp": "2015-06-19T12:31:46", 
     "_body": "", 
     "_head": "1603", 
@@ -820,7 +788,6 @@
     "_type": "TempBasal", 
     "temp": "percent", 
     "_description": "TempBasal 2015-06-19T12:31:46 head[2], body[1] op[0x33]", 
-    "date": 1434713506000.0, 
     "timestamp": "2015-06-19T12:31:46", 
     "_body": "08", 
     "_head": "33ba", 
@@ -830,7 +797,6 @@
   {
     "_type": "BasalProfileStart", 
     "_description": "BasalProfileStart 2015-06-19T12:00:00 head[2], body[3] op[0x7b]", 
-    "date": 1434711600000.0, 
     "timestamp": "2015-06-19T12:00:00", 
     "_body": "181e00", 
     "offset": 43200000, 
@@ -887,7 +853,6 @@
     "duration": 0, 
     "amount": 3.0, 
     "unabsorbed": 0.6, 
-    "date": 1434710663000.0, 
     "type": "normal", 
     "_date": "57ac4b730f"
   }, 
@@ -901,7 +866,6 @@
     "_head": "5b00", 
     "unabsorbed_insulin_total": 0.0, 
     "correction_estimate": 0.0, 
-    "date": 1434710663000.0, 
     "_date": "57ac0b730f", 
     "bolus_estimate": 0.0, 
     "bg_target_low": 90, 
@@ -913,7 +877,6 @@
   {
     "_type": "BasalProfileStart", 
     "_description": "BasalProfileStart 2015-06-19T11:44:13 head[2], body[3] op[0x7b]", 
-    "date": 1434710653000.0, 
     "timestamp": "2015-06-19T11:44:13", 
     "_body": "142200", 
     "offset": 36000000, 
@@ -962,7 +925,6 @@
     "duration": 60, 
     "amount": 1.4, 
     "unabsorbed": 0.3, 
-    "date": 1434709766000.0, 
     "type": "square", 
     "_date": "5a9dab730f"
   }, 
@@ -976,7 +938,6 @@
     "_head": "5b00", 
     "unabsorbed_insulin_total": 0.0, 
     "correction_estimate": 0.0, 
-    "date": 1434709766000.0, 
     "_date": "5a9d0b730f", 
     "bolus_estimate": 5.2, 
     "bg_target_low": 90, 
@@ -990,7 +951,6 @@
     "_type": "SensorAlert", 
     "alarm_description": "Low Glucose", 
     "_description": "SensorAlert 2015-06-19T10:45:42 head[3], body[0] op[0x0b]", 
-    "date": 1434707142000.0, 
     "timestamp": "2015-06-19T10:45:42", 
     "_body": "", 
     "_head": "0b6655", 
@@ -1001,7 +961,6 @@
     "_type": "TempBasalDuration", 
     "duration (min)": 60, 
     "_description": "TempBasalDuration 2015-06-19T10:44:12 head[2], body[0] op[0x16]", 
-    "date": 1434707052000.0, 
     "timestamp": "2015-06-19T10:44:12", 
     "_body": "", 
     "_head": "1602", 
@@ -1011,7 +970,6 @@
     "_type": "TempBasal", 
     "temp": "percent", 
     "_description": "TempBasal 2015-06-19T10:44:12 head[2], body[1] op[0x33]", 
-    "date": 1434707052000.0, 
     "timestamp": "2015-06-19T10:44:12", 
     "_body": "08", 
     "_head": "3300", 
@@ -1021,7 +979,6 @@
   {
     "_type": "BasalProfileStart", 
     "_description": "BasalProfileStart 2015-06-19T10:00:00 head[2], body[3] op[0x7b]", 
-    "date": 1434704400000.0, 
     "timestamp": "2015-06-19T10:00:00", 
     "_body": "142200", 
     "offset": 36000000, 
@@ -1202,7 +1159,6 @@
       ]
     }, 
     "_description": "OldBolusWizardChange 2015-06-19T09:23:28 head[2], body[137] op[0x5a]", 
-    "date": 1434702208000.0, 
     "timestamp": "2015-06-19T09:23:28", 
     "_body": "451100006417005024003c2d0064000000000000000000000000000000280000000000000000000000000000005a7800000000000000000000000000000000000000000045110000641700502400502d005a000000000000000000000000000000280000000000000000000000000000005a7800000000000000000000000000000000000000000044", 
     "changed": {
@@ -1382,7 +1338,6 @@
   {
     "_type": "BasalProfileStart", 
     "_description": "BasalProfileStart 2015-06-19T08:06:58 head[2], body[3] op[0x7b]", 
-    "date": 1434697618000.0, 
     "timestamp": "2015-06-19T08:06:58", 
     "_body": "0e2200", 
     "offset": 25200000, 
@@ -1393,7 +1348,6 @@
   {
     "_type": "PumpResume", 
     "_description": "PumpResume 2015-06-19T08:06:58 head[2], body[0] op[0x1f]", 
-    "date": 1434697618000.0, 
     "timestamp": "2015-06-19T08:06:58", 
     "_body": "", 
     "_head": "1f20", 
@@ -1402,7 +1356,6 @@
   {
     "_type": "PumpSuspend", 
     "_description": "PumpSuspend 2015-06-19T08:02:22 head[2], body[0] op[0x1e]", 
-    "date": 1434697342000.0, 
     "timestamp": "2015-06-19T08:02:22", 
     "_body": "", 
     "_head": "1e01", 
@@ -1411,7 +1364,6 @@
   {
     "_type": "PumpResume", 
     "_description": "PumpResume 2015-06-19T08:02:07 head[2], body[0] op[0x1f]", 
-    "date": 1434697327000.0, 
     "timestamp": "2015-06-19T08:02:07", 
     "_body": "", 
     "_head": "1f20", 
@@ -1420,7 +1372,6 @@
   {
     "_type": "BasalProfileStart", 
     "_description": "BasalProfileStart 2015-06-19T08:02:07 head[2], body[3] op[0x7b]", 
-    "date": 1434697327000.0, 
     "timestamp": "2015-06-19T08:02:07", 
     "_body": "0e2200", 
     "offset": 25200000, 
@@ -1431,7 +1382,6 @@
   {
     "_type": "PumpSuspend", 
     "_description": "PumpSuspend 2015-06-19T08:02:04 head[2], body[0] op[0x1e]", 
-    "date": 1434697324000.0, 
     "timestamp": "2015-06-19T08:02:04", 
     "_body": "", 
     "_head": "1e01", 
@@ -1447,7 +1397,6 @@
     "duration": 0, 
     "amount": 2.0, 
     "unabsorbed": 4.3, 
-    "date": 1434697224000.0, 
     "type": "normal", 
     "_date": "588048730f"
   }

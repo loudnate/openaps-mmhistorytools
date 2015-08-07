@@ -179,7 +179,6 @@ class CleanHistoryTestCase(unittest.TestCase):
                     "_head": "5b00",
                     "unabsorbed_insulin_total": 0.0,
                     "correction_estimate": 0.0,
-                    "date": 1433527042000.0,
                     "_date": "56b912650f",
                     "bolus_estimate": 1.6,
                     "bg_target_low": 90,
@@ -198,7 +197,6 @@ class CleanHistoryTestCase(unittest.TestCase):
                     "_head": "5b00",
                     "unabsorbed_insulin_total": 0.0,
                     "correction_estimate": 0.0,
-                    "date": 1433526883000.0,
                     "_date": "6bb612650f",
                     "bolus_estimate": 5.0,
                     "bg_target_low": 90,
@@ -217,7 +215,6 @@ class CleanHistoryTestCase(unittest.TestCase):
                     "_head": "5b00",
                     "unabsorbed_insulin_total": 0.0,
                     "correction_estimate": 0.0,
-                    "date": 1433526294000.0,
                     "_date": "76ac12650f",
                     "bolus_estimate": 10.8,
                     "appended": [
@@ -292,7 +289,6 @@ class CleanHistoryTestCase(unittest.TestCase):
             {
                 "_type": "PumpResume",
                 "_description": "PumpResume 2015-06-06T20:50:01 head[2], body[0] op[0x1f]",
-                "date": 1433620201000.0,
                 "timestamp": "2015-06-06T20:50:01",
                 "_body": "",
                 "_head": "1f20",
@@ -316,7 +312,6 @@ class CleanHistoryTestCase(unittest.TestCase):
             {
                 "_type": "PumpResume",
                 "_description": "PumpResume 2015-06-06T20:50:01 head[2], body[0] op[0x1f]",
-                "date": 1433620201000.0,
                 "timestamp": "2015-06-06T20:50:01",
                 "_body": "",
                 "_head": "1f20",
@@ -348,7 +343,6 @@ class CleanHistoryTestCase(unittest.TestCase):
             {
                 "_type": "PumpSuspend",
                 "_description": "PumpSuspend 2015-06-06T20:49:57 head[2], body[0] op[0x1e]",
-                "date": 1433620197000.0,
                 "timestamp": "2015-06-06T20:49:57",
                 "_body": "",
                 "_head": "1e01",
@@ -375,7 +369,6 @@ class CleanHistoryTestCase(unittest.TestCase):
                 {
                     "_type": "PumpSuspend",
                     "_description": "PumpSuspend 2015-06-06T20:49:57 head[2], body[0] op[0x1e]",
-                    "date": 1433620197000.0,
                     "timestamp": "2015-06-06T20:49:57",
                     "_body": "",
                     "_head": "1e01",
@@ -398,7 +391,6 @@ class CleanHistoryTestCase(unittest.TestCase):
             {
                 "_type": "PumpSuspend",
                 "_description": "PumpSuspend 2015-06-06T20:49:57 head[2], body[0] op[0x1e]",
-                "date": 1433620197000.0,
                 "timestamp": "2015-06-06T20:49:57",
                 "_body": "",
                 "_head": "1e01",
@@ -425,7 +417,6 @@ class CleanHistoryTestCase(unittest.TestCase):
                 {
                     "_type": "PumpSuspend",
                     "_description": "PumpSuspend 2015-06-06T20:49:57 head[2], body[0] op[0x1e]",
-                    "date": 1433620197000.0,
                     "timestamp": "2015-06-06T20:49:57",
                     "_body": "",
                     "_head": "1e01",
@@ -450,7 +441,6 @@ class ReconcileHistoryTestCase(unittest.TestCase):
                     "duration (min)": 0,
                     "_description": "TempBasalDuration 2015-06-06T20:50:15 head[2], body[0] "
                                     "op[0x16]",
-                    "date": 1433620215000.0,
                     "timestamp": "2015-06-06T20:50:15",
                     "_body": "",
                     "_head": "1600",
@@ -460,7 +450,6 @@ class ReconcileHistoryTestCase(unittest.TestCase):
                     "_type": "TempBasal",
                     "temp": "percent",
                     "_description": "TempBasal 2015-06-06T20:50:15 head[2], body[1] op[0x33]",
-                    "date": 1433620215000.0,
                     "timestamp": "2015-06-06T20:50:15",
                     "_body": "08",
                     "_head": "3300",
@@ -472,7 +461,6 @@ class ReconcileHistoryTestCase(unittest.TestCase):
                     "duration (min)": 10,
                     "_description": "TempBasalDuration 2015-06-06T20:39:45 head[2], body[0] "
                                     "op[0x16]",
-                    "date": 1433619585000.0,
                     "timestamp": "2015-06-06T20:39:45",
                     "_body": "",
                     "_head": "1601",
@@ -482,7 +470,6 @@ class ReconcileHistoryTestCase(unittest.TestCase):
                     "_type": "TempBasal",
                     "temp": "percent",
                     "_description": "TempBasal 2015-06-06T20:39:45 head[2], body[1] op[0x33]",
-                    "date": 1433619585000.0,
                     "timestamp": "2015-06-06T20:39:45",
                     "_body": "08",
                     "_head": "3396",
@@ -494,7 +481,6 @@ class ReconcileHistoryTestCase(unittest.TestCase):
                     "duration (min)": 60,
                     "_description": "TempBasalDuration 2015-06-06T19:05:17 head[2], body[0] "
                                     "op[0x16]",
-                    "date": 1433613917000.0,
                     "timestamp": "2015-06-06T19:05:17",
                     "_body": "",
                     "_head": "1602",
@@ -504,7 +490,6 @@ class ReconcileHistoryTestCase(unittest.TestCase):
                     "_type": "TempBasal",
                     "temp": "percent",
                     "_description": "TempBasal 2015-06-06T19:05:17 head[2], body[1] op[0x33]",
-                    "date": 1433613917000.0,
                     "timestamp": "2015-06-06T19:05:17",
                     "_body": "08",
                     "_head": "33c8",
@@ -528,7 +513,6 @@ class ReconcileHistoryTestCase(unittest.TestCase):
                     "duration (min)": 37,
                     "_description": "TempBasalDuration generated due to interleaved PumpSuspend "
                                     "event",
-                    "date": 1434204002000.0,
                     "timestamp": "2015-06-13T15:00:02",
                     "_body": "",
                     "_head": "1602",
@@ -538,7 +522,6 @@ class ReconcileHistoryTestCase(unittest.TestCase):
                     "_type": "TempBasal",
                     "temp": "percent",
                     "_description": "TempBasal generated due to interleaved PumpSuspend event",
-                    "date": 1434204002000.0,
                     "timestamp": "2015-06-13T15:00:02",
                     "_body": "08",
                     "_head": "3378",
@@ -548,7 +531,6 @@ class ReconcileHistoryTestCase(unittest.TestCase):
                 {
                     "_type": "PumpResume",
                     "_description": "PumpResume 2015-06-13T15:00:02 head[2], body[0] op[0x1f]",
-                    "date": 1434204002000.0,
                     "timestamp": "2015-06-13T15:00:02",
                     "_body": "",
                     "_head": "1f20",
@@ -557,7 +539,6 @@ class ReconcileHistoryTestCase(unittest.TestCase):
                 {
                     "_type": "PumpSuspend",
                     "_description": "PumpSuspend 2015-06-13T14:54:19 head[2], body[0] op[0x1e]",
-                    "date": 1434203659000.0,
                     "timestamp": "2015-06-13T14:54:19",
                     "_body": "",
                     "_head": "1e01",
@@ -568,7 +549,6 @@ class ReconcileHistoryTestCase(unittest.TestCase):
                     "duration (min)": 16,
                     "_description": "TempBasalDuration 2015-06-13T14:37:58 head[2], body[0] "
                                     "op[0x16]",
-                    "date": 1434202678000.0,
                     "timestamp": "2015-06-13T14:37:58",
                     "_body": "",
                     "_head": "1602",
@@ -578,7 +558,6 @@ class ReconcileHistoryTestCase(unittest.TestCase):
                     "_type": "TempBasal",
                     "temp": "percent",
                     "_description": "TempBasal 2015-06-13T14:37:58 head[2], body[1] op[0x33]",
-                    "date": 1434202678000.0,
                     "timestamp": "2015-06-13T14:37:58",
                     "_body": "08",
                     "_head": "3378",
