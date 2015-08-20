@@ -8,15 +8,13 @@
     "_head": "010040004000ac00", 
     "duration": 0, 
     "amount": 1.6, 
-    "unabsorbed": 4.3, 
-    "date": 1434751465000.0, 
+    "unabsorbed": 4.3,
     "type": "normal", 
     "_date": "598457730f"
   }, 
   {
     "_type": "LowReservoir", 
     "_description": "LowReservoir 2015-06-19T23:05:19 head[2], body[0] op[0x34]", 
-    "date": 1434751519000.0, 
     "timestamp": "2015-06-19T23:05:19", 
     "_body": "", 
     "appended": [
@@ -132,7 +130,6 @@
     "_head": "5b00", 
     "unabsorbed_insulin_total": 0.0, 
     "correction_estimate": 0.0, 
-    "date": 1434751465000.0, 
     "_date": "598417730f", 
     "bolus_estimate": 3.0, 
     "bg_target_low": 90, 
@@ -144,7 +141,6 @@
   {
     "_type": "BasalProfileStart", 
     "_description": "BasalProfileStart 2015-06-19T22:00:00 head[2], body[3] op[0x7b]", 
-    "date": 1434747600000.0, 
     "timestamp": "2015-06-19T22:00:00", 
     "_body": "2c2400", 
     "offset": 79200000, 
@@ -162,7 +158,6 @@
     "duration": 0, 
     "amount": 2.5, 
     "unabsorbed": 3.2, 
-    "date": 1434745875000.0, 
     "type": "normal", 
     "_date": "4f9f95730f"
   }, 
@@ -243,7 +238,6 @@
     "duration": 150, 
     "amount": 2.15, 
     "unabsorbed": 3.2, 
-    "date": 1434745975000.0, 
     "type": "square", 
     "_date": "77a0b5730f"
   }, 
@@ -257,7 +251,6 @@
     "_head": "5b00", 
     "unabsorbed_insulin_total": 0.0, 
     "correction_estimate": 0.0, 
-    "date": 1434745875000.0, 
     "_date": "4f9f15730f", 
     "bolus_estimate": 7.0, 
     "bg_target_low": 90, 
@@ -343,7 +336,6 @@
     "duration": 0, 
     "amount": 2.0, 
     "unabsorbed": 2.1, 
-    "date": 1434744159000.0, 
     "type": "normal", 
     "_date": "678255730f"
   }

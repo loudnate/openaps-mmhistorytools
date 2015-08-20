@@ -4,7 +4,6 @@
     "_type": "SensorAlert",
     "alarm_description": "Cal Reminder",
     "_description": "SensorAlert 2015-06-05T19:06:00 head[3], body[0] op[0x0b]",
-    "date": 1433527560000.0,
     "timestamp": "2015-06-05T19:06:00",
     "_body": "",
     "appended": [
@@ -83,7 +82,6 @@
     "_head": "5b00",
     "unabsorbed_insulin_total": 0.0,
     "correction_estimate": 0.0,
-    "date": 1433527042000.0,
     "_date": "56b912650f",
     "bolus_estimate": 1.6,
     "bg_target_low": 90,
@@ -165,7 +163,6 @@
     "duration": 0,
     "amount": 2.0,
     "unabsorbed": 1.1,
-    "date": 1433526883000.0,
     "type": "normal",
     "_date": "6bb652650f"
   },
@@ -179,7 +176,6 @@
     "_head": "5b00",
     "unabsorbed_insulin_total": 0.0,
     "correction_estimate": 0.0,
-    "date": 1433526883000.0,
     "_date": "6bb612650f",
     "bolus_estimate": 5.0,
     "bg_target_low": 90,
@@ -253,7 +249,6 @@
     "duration": 0,
     "amount": 0.6,
     "unabsorbed": 0.7,
-    "date": 1433526294000.0,
     "type": "normal",
     "_date": "76ac52650f"
   },
@@ -267,7 +262,6 @@
     "_head": "5b00",
     "unabsorbed_insulin_total": 0.0,
     "correction_estimate": 0.0,
-    "date": 1433526294000.0,
     "_date": "76ac12650f",
     "bolus_estimate": 10.8,
     "appended": [
@@ -341,7 +335,6 @@
     "_head": "5b00",
     "unabsorbed_insulin_total": 0.0,
     "correction_estimate": 0.0,
-    "date": 1433526287000.0,
     "_date": "6fac12650f",
     "bolus_estimate": 10.8,
     "bg_target_low": 90,
@@ -355,7 +348,6 @@
     "_type": "SensorAlert",
     "alarm_description": "High Glucose",
     "_description": "SensorAlert 2015-06-05T16:44:00 head[3], body[0] op[0x0b]",
-    "date": 1433519040000.0,
     "timestamp": "2015-06-05T16:44:00",
     "_body": "",
     "_head": "0b65b6",
@@ -423,7 +415,6 @@
     "duration": 0,
     "amount": 2.0,
     "unabsorbed": 0.4,
-    "date": 1433517661000.0,
     "type": "normal",
     "_date": "419550650f"
   }
