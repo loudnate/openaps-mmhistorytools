@@ -826,7 +826,7 @@ class ResolveHistoryTestCase(unittest.TestCase):
                     end_at=_("2015-09-07T15:38:23"),
                     amount=1,
                     unit="event",
-                    description="JournalEntryExerciseMarker: 1event"
+                    description="JournalEntryExerciseMarker"
                 )
             ],
             h.resolved_records
