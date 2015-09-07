@@ -10,7 +10,7 @@ from openapscontrib.mmhistorytools.historytools import NormalizeRecords
 from openapscontrib.mmhistorytools.historytools import ReconcileHistory
 from openapscontrib.mmhistorytools.historytools import ResolveHistory
 from openapscontrib.mmhistorytools.historytools import TrimHistory
-from openapscontrib.mmhistorytools.models import Bolus, Meal, TempBasal
+from openapscontrib.mmhistorytools.models import Bolus, Meal, TempBasal, Exercise
 
 
 def get_file_at_path(path):
@@ -809,6 +809,27 @@ class ResolveHistoryTestCase(unittest.TestCase):
                 )
             ],
             [r for r in h.resolved_records if r["type"] == "Bolus"]
+        )
+    
+    def test_exercise_marker(self):
+        with open(get_file_at_path("fixtures/exercise_marker.json")) as fp:
+            pump_history = json.load(fp)
+
+        h = ResolveHistory(pump_history)
+
+        _ = parser.parse
+
+        self.assertListEqual(
+            [
+                Exercise(
+                    start_at=_("2015-09-07T15:38:23"),
+                    end_at=_("2015-09-07T15:38:23"),
+                    amount=1,
+                    unit="event",
+                    description="JournalEntryExerciseMarker: 1event"
+                )
+            ],
+            h.resolved_records
         )
 
 
