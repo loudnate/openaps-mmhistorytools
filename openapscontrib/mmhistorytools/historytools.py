@@ -4,7 +4,7 @@ from datetime import datetime
 from datetime import timedelta
 from dateutil import parser
 
-from .models import Bolus, Meal, TempBasal, Unit
+from .models import Bolus, Meal, TempBasal, Exercise, Unit
 
 
 class ParseHistory(object):
@@ -254,6 +254,7 @@ class ResolveHistory(ParseHistory):
     - `Bolus`: Insulin delivery events in Units, or Units/hour
     - `Meal`: Grams of carbohydrate
     - `TempBasal`: Paced insulin delivery events in Units/hour, or Percent of scheduled basal
+    - `Exercise`: Exercise event
 
     The following history events are parsed:
 
@@ -263,6 +264,7 @@ class ResolveHistory(ParseHistory):
     - Normal Bolus is converted to a Bolus record
     - BolusWizard carb entry is converted to a Meal record
     - JournalEntryMealMarker is converted to a Meal record
+    - JournalEntryExerciseMarker is converted to an Exercise record
 
     Events that are not related to the record types or seem to have no effect are dropped.
     """
@@ -344,6 +346,18 @@ class ResolveHistory(ParseHistory):
                 unit=Unit.grams,
                 description='{}: {}g'.format(event["_type"], carb_input)
             )
+
+    def _decode_journalentryexercisemarker(self, event):
+        num_events = 1
+        start_at = self._event_datetime(event)
+
+        return Exercise(
+            start_at=start_at,
+            end_at=start_at,
+            amount=num_events,
+            unit=Unit.event,
+            description=event["_type"]
+        )        
 
     def _decode_pumpresume(self, event):
         self._resume_datetime = self._event_datetime(event)

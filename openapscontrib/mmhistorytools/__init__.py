@@ -215,6 +215,7 @@ Each record is a dictionary representing one of the following types, as denoted 
 - `Bolus`: Insulin delivery events in Units, or Units/hour
 - `Meal`: Grams of carbohydrate
 - `TempBasal`: Paced insulin delivery events in Units/hour, or Percent of scheduled basal
+- `Exercise`: Exercise event
 The following history events are parsed:
 - TempBasal and TempBasalDuration are combined into TempBasal records
 - PumpSuspend and PumpResume are combined into TempBasal records of 0%
@@ -222,6 +223,7 @@ The following history events are parsed:
 - Normal Bolus is converted to a Bolus record
 - BolusWizard carb entry is converted to a Meal record
 - JournalEntryMealMarker is converted to a Meal record
+- JournalEntryExerciseMarker is converted to an Exercise record
 Events that are not related to the record types or seem to have no effect are dropped.
 """
     def main(self, args, app):
