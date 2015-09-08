@@ -356,7 +356,7 @@ class ResolveHistory(ParseHistory):
             end_at=start_at,
             amount=num_events,
             unit=Unit.event,
-            description='{}'.format(event["_type"])
+            description=event["_type"]
         )        
 
     def _decode_pumpresume(self, event):
