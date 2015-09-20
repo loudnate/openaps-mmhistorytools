@@ -1,0 +1,10 @@
+[
+  {
+    "temp": "absolute",
+    "recieved": true,
+    "rate": 1.425,
+    "timestamp": "2015-09-19T20:25:27.468623",
+    "duration": 30,
+    "type": "TempBasal"
+  }
+]
