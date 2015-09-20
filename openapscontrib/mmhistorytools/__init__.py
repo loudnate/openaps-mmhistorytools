@@ -308,7 +308,7 @@ If that key isn't present, or its value is false, the record is ignored.
         super(append_dose, self).configure_app(app, parser)
 
         parser.add_argument(
-            '--dose', '--doses',
+            '--dose',
             help='JSON-encoded dosing report'
         )
 
@@ -322,7 +322,7 @@ If that key isn't present, or its value is false, the record is ignored.
     def get_program(self, params):
         args, kwargs = super(append_dose, self).get_program(params)
 
-        args.append(_opt_json_file(params['doses']))
+        args.append(_opt_json_file(params['dose']))
 
         return args, kwargs
 
