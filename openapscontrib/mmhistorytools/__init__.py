@@ -13,6 +13,7 @@ from openaps.uses.use import Use
 
 from historytools import TrimHistory, CleanHistory, ReconcileHistory
 from historytools import ResolveHistory, NormalizeRecords
+from historytools import AppendDoseToHistory
 
 
 # set_config is needed by openaps for all vendors.
@@ -38,7 +39,7 @@ def display_device(device):
 # agp as a vendor.  Return a list of classes which inherit from Use,
 # or are compatible with it:
 def get_uses(device, config):
-    return [trim, clean, reconcile, resolve, normalize]
+    return [trim, clean, reconcile, resolve, normalize, append_dose]
 
 
 def _opt_date(timestamp):
@@ -293,3 +294,44 @@ integers representing the number of minutes from `--zero-at`.
         tool = NormalizeRecords(*args, **kwargs)
 
         return tool.normalized_records
+
+
+# noinspection PyPep8Naming
+class append_dose(BaseUse):
+    """Appends a dose record to a sequence of cleaned history
+
+If `--basal-profile` is provided, the TempBasal `amount` is replaced with a relative dose in
+Units/hour. A single TempBasal record might split into multiple records to account for boundary
+crossings in the basal schedule.
+If `--zero-at` is provided, the values for the `start_at` and `end_at` keys are replaced with signed
+integers representing the number of minutes from `--zero-at`.
+"""
+
+    def configure_app(self, app, parser):
+        super(append_dose, self).configure_app(app, parser)
+
+        parser.add_argument(
+            '--dose', '--doses',
+            help='JSON-encoded dosing report'
+        )
+
+    def get_params(self, args):
+        params = super(append_dose, self).get_params(args)
+
+        params.update(doses=args.dose)
+
+        return params
+
+    def get_program(self, params):
+        args, kwargs = super(append_dose, self).get_program(params)
+
+        args.append(params['doses'])
+
+        return args, kwargs
+
+    def main(self, args, app):
+        args, _ = self.get_program(self.get_params(args))
+
+        tool = AppendDoseToHistory(*args)
+
+        return tool.appended_history
