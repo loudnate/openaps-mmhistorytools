@@ -300,11 +300,8 @@ integers representing the number of minutes from `--zero-at`.
 class append_dose(BaseUse):
     """Appends a dose record to a sequence of cleaned history
 
-If `--basal-profile` is provided, the TempBasal `amount` is replaced with a relative dose in
-Units/hour. A single TempBasal record might split into multiple records to account for boundary
-crossings in the basal schedule.
-If `--zero-at` is provided, the values for the `start_at` and `end_at` keys are replaced with signed
-integers representing the number of minutes from `--zero-at`.
+The expected dose record format is a dictionary with a key named "recieved" (sic).
+If that key isn't present, or its value is false, the record is ignored.
 """
 
     def configure_app(self, app, parser):
@@ -325,7 +322,7 @@ integers representing the number of minutes from `--zero-at`.
     def get_program(self, params):
         args, kwargs = super(append_dose, self).get_program(params)
 
-        args.append(params['doses'])
+        args.append(_opt_json_file(params['doses']))
 
         return args, kwargs
 
