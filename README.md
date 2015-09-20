@@ -26,26 +26,26 @@ $ python setup.py develop
 ### Adding to your openaps project
 ```bash
 $ openaps vendor add openapscontrib.mmhistorytools
-$ openaps device add munge mmhistorytools
+$ openaps device add history mmhistorytools
 ```
 
 ## Usage
 Use the device help menu to see available commands.
 ```bash
-$ openaps use munge -h
-usage: openaps-use munge [-h] USAGE ...
+$ openaps use history -h
+usage: openaps-use history [-h] USAGE ...
 
 optional arguments:
   -h, --help  show this help message and exit
 
-## Device munge:
+## Device history:
   vendor openapscontrib.mmhistorytools
-  
+
   mmhistorytools - tools for cleaning, condensing, and reformatting history data
-  
-  
-  
-      
+
+
+
+
 
   USAGE       Usage Details
     trim      Trims a sequence of pump history to a specified time window
@@ -61,8 +61,8 @@ optional arguments:
 
 Use the command help menu to see available arguments.
 ```bash
-$ openaps use munge clean -h
-usage: openaps-use munge clean [-h] [--start START] [--end END] [infile]
+$ openaps use history clean -h
+usage: openaps-use history clean [-h] [--start START] [--end END] [infile]
 
 Resolve inconsistencies from a sequence of pump history
 
@@ -85,24 +85,24 @@ Tasks performed by this pass:
 
 Add a report flow to process pump history for analysis:
 ```
-$ openaps report add clean_history.json JSON munge clean pump_history.json
-$ openaps report add reconciled_history.json JSON munge reconcile clean_history.json
-$ openaps report add resolved_history.json JSON munge resolve reconciled_history.json
-$ openaps report add normalized_history.json JSON munge normalize resolved_history.json --basal-profile basal.json --zero-at read_clock.json
+$ openaps report add clean_history.json JSON history clean pump_history.json
+$ openaps report add reconciled_history.json JSON history reconcile clean_history.json
+$ openaps report add resolved_history.json JSON history resolve reconciled_history.json
+$ openaps report add normalized_history.json JSON history normalize resolved_history.json --basal-profile basal.json --zero-at read_clock.json
 ```
 
 All `infile` arguments default to accept stdin, so commands can be chained to simplify testing:
 ```bash
-$ openaps use pump iter_pump_hours 4 | openaps use munge clean | openaps use munge reconcile | openaps use munge resolve | openaps use munge normalize --basal-profile basal.json --zero-at read_clock.json
+$ openaps use pump iter_pump_hours 4 | openaps use history clean | openaps use history reconcile | openaps use history resolve | openaps use history normalize --basal-profile basal.json --zero-at read_clock.json
 ```
 
 ## Contributing
 Contributions are welcome and encouraged in the form of bugs and pull requests.
 
 ### Testing
- 
+
  Unit tests can be run manually via setuptools. This is also handled by TravisCI after opening a pull request.
- 
+
  ```bash
  $ python setup.py test
  ```
