@@ -315,7 +315,7 @@ If that key isn't present, or its value is false, the record is ignored.
     def get_params(self, args):
         params = super(append_dose, self).get_params(args)
 
-        params.update(doses=args.dose)
+        params.update(dose=args.dose)
 
         return params
 
