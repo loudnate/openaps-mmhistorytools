@@ -39,7 +39,7 @@ def display_device(device):
 # agp as a vendor.  Return a list of classes which inherit from Use,
 # or are compatible with it:
 def get_uses(device, config):
-    return [trim, clean, reconcile, resolve, normalize, append_dose]
+    return [trim, clean, reconcile, resolve, normalize, append_dose, prepare]
 
 
 def _opt_date(timestamp):
@@ -217,6 +217,7 @@ Each record is a dictionary representing one of the following types, as denoted 
 - `Meal`: Grams of carbohydrate
 - `TempBasal`: Paced insulin delivery events in Units/hour, or Percent of scheduled basal
 - `Exercise`: Exercise event
+_
 The following history events are parsed:
 - TempBasal and TempBasalDuration are combined into TempBasal records
 - PumpSuspend and PumpResume are combined into TempBasal records of 0%
@@ -225,6 +226,7 @@ The following history events are parsed:
 - BolusWizard carb entry is converted to a Meal record
 - JournalEntryMealMarker is converted to a Meal record
 - JournalEntryExerciseMarker is converted to an Exercise record
+_
 Events that are not related to the record types or seem to have no effect are dropped.
 """
     def main(self, args, app):
@@ -242,6 +244,7 @@ class normalize(BaseUse):
 If `--basal-profile` is provided, the TempBasal `amount` is replaced with a relative dose in
 Units/hour. A single TempBasal record might split into multiple records to account for boundary
 crossings in the basal schedule.
+_
 If `--zero-at` is provided, the values for the `start_at` and `end_at` keys are replaced with signed
 integers representing the number of minutes from `--zero-at`.
 """
@@ -332,3 +335,53 @@ If that key isn't present, or its value is false, the record is ignored.
         tool = AppendDoseToHistory(*args)
 
         return tool.appended_history
+
+
+# noinspection PyPep8Naming
+class prepare(BaseUse):
+    """Runs a sequence of commands to prepare history for use in prediction and dosing.
+
+This command performs the following commands in sequence:
+[clean] -> [reconcile] -> [resolve] -> [normalize:basal-profile]
+_
+Please refer to the --help documentation of each command for more information.
+_
+Warning: This command will not return the same level of diagnostic logging as
+running all four commands separately. If there is reason to believe an issue
+has occurred, output from this command may not be sufficient for debugging.
+"""
+
+    def configure_app(self, app, parser):
+        super(prepare, self).configure_app(app, parser)
+
+        parser.add_argument(
+            '--basal-profile',
+            default=None,
+            help='A file containing a basal profile by which to adjust TempBasal records'
+        )
+
+    def get_params(self, args):
+        params = super(prepare, self).get_params(args)
+        if 'basal_profile' in args and args.basal_profile:
+            params.update(basal_profile=args.basal_profile)
+
+        return params
+
+    def get_program(self, params):
+        args, kwargs = super(prepare, self).get_program(params)
+
+        kwargs.update(
+            basal_schedule=_opt_json_file(params.get('basal_profile'))
+        )
+
+        return args, kwargs
+
+    def main(self, args, app):
+        args, kwargs = self.get_program(self.get_params(args))
+
+        clean_history = CleanHistory(*args).clean_history
+        reconciled_history = ReconcileHistory(clean_history).reconciled_history
+        resolved_records = ResolveHistory(reconciled_history).resolved_records
+        normalized_records = NormalizeRecords(resolved_records, **kwargs).normalized_records
+
+        return normalized_records
