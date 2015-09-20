@@ -5,12 +5,13 @@ import json
 import os
 import unittest
 
+from openapscontrib.mmhistorytools.historytools import AppendDoseToHistory
 from openapscontrib.mmhistorytools.historytools import CleanHistory
 from openapscontrib.mmhistorytools.historytools import NormalizeRecords
 from openapscontrib.mmhistorytools.historytools import ReconcileHistory
 from openapscontrib.mmhistorytools.historytools import ResolveHistory
 from openapscontrib.mmhistorytools.historytools import TrimHistory
-from openapscontrib.mmhistorytools.models import Bolus, Meal, TempBasal
+from openapscontrib.mmhistorytools.models import Bolus, Meal, TempBasal, Exercise
 
 
 def get_file_at_path(path):
@@ -811,6 +812,27 @@ class ResolveHistoryTestCase(unittest.TestCase):
             [r for r in h.resolved_records if r["type"] == "Bolus"]
         )
 
+    def test_exercise_marker(self):
+        with open(get_file_at_path("fixtures/exercise_marker.json")) as fp:
+            pump_history = json.load(fp)
+
+        h = ResolveHistory(pump_history)
+
+        _ = parser.parse
+
+        self.assertListEqual(
+            [
+                Exercise(
+                    start_at=_("2015-09-07T15:38:23"),
+                    end_at=_("2015-09-07T15:38:23"),
+                    amount=1,
+                    unit="event",
+                    description="JournalEntryExerciseMarker"
+                )
+            ],
+            h.resolved_records
+        )
+
 
 class BasalScheduleTestCase(unittest.TestCase):
     @classmethod
@@ -1493,4 +1515,192 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                 }
             ],
             records
+        )
+
+
+class AppendDoseToHistoryTestCase(unittest.TestCase):
+    def test_append_single_dose(self):
+        with open(get_file_at_path('fixtures/set_dose.json')) as fp:
+            doses = json.load(fp)
+
+        h = AppendDoseToHistory([{'_type': 'Foo'}], doses)
+
+        self.assertListEqual(
+            [
+                {
+                    '_type': 'TempBasalDuration',
+                    'timestamp': '2015-09-19T20:25:27.468623',
+                    'duration (min)': 30,
+                    'recieved': True,
+                    'temp': 'absolute',
+                    'rate': 1.425
+                },
+                {
+                    '_type': 'TempBasal',
+                    'timestamp': '2015-09-19T20:25:27.468623',
+                    'duration': 30,
+                    'recieved': True,
+                    'temp': 'absolute',
+                    'rate': 1.425
+                },
+                {
+                    '_type': 'Foo'
+                }
+            ],
+            h.appended_history
+        )
+
+    def test_append_single_dose_dict(self):
+        with open(get_file_at_path('fixtures/set_dose.json')) as fp:
+            doses = json.load(fp)
+
+        h = AppendDoseToHistory([{'_type': 'Foo'}], doses[0])
+
+        self.assertListEqual(
+            [
+                {
+                    '_type': 'TempBasalDuration',
+                    'timestamp': '2015-09-19T20:25:27.468623',
+                    'duration (min)': 30,
+                    'recieved': True,
+                    'temp': 'absolute',
+                    'rate': 1.425
+                },
+                {
+                    '_type': 'TempBasal',
+                    'timestamp': '2015-09-19T20:25:27.468623',
+                    'duration': 30,
+                    'recieved': True,
+                    'temp': 'absolute',
+                    'rate': 1.425
+                },
+                {
+                    '_type': 'Foo'
+                }
+            ],
+            h.appended_history
+        )
+
+    def test_append_single_dose_to_long_history(self):
+        with open(get_file_at_path('fixtures/square_bolus.json')) as fp:
+            pump_history = json.load(fp)
+
+        with open(get_file_at_path('fixtures/set_dose.json')) as fp:
+            doses = json.load(fp)
+
+        h = AppendDoseToHistory(pump_history, doses)
+
+        self.assertListEqual(
+            [
+                {
+                    '_type': 'TempBasalDuration',
+                    'timestamp': '2015-09-19T20:25:27.468623',
+                    'duration (min)': 30,
+                    'recieved': True,
+                    'temp': 'absolute',
+                    'rate': 1.425
+                },
+                {
+                    '_type': 'TempBasal',
+                    'timestamp': '2015-09-19T20:25:27.468623',
+                    'duration': 30,
+                    'recieved': True,
+                    'temp': 'absolute',
+                    'rate': 1.425
+                },
+                {
+                    'programmed': 1.6,
+                    '_type': 'Bolus',
+                    '_description': 'Bolus 2015-06-19T23:04:25 head[8], body[0] op[0x01]',
+                    'timestamp': '2015-06-19T23:04:25',
+                    '_body': '',
+                    '_head': '010040004000ac00',
+                    'amount': 1.6,
+                    'unabsorbed': 4.3,
+                    'duration': 0,
+                    'type': 'normal',
+                    '_date': '598457730f'
+                }
+            ],
+            h.appended_history[:3]
+        )
+
+    def test_append_single_dose_to_empty_history(self):
+        with open(get_file_at_path('fixtures/set_dose.json')) as fp:
+            doses = json.load(fp)
+
+        h = AppendDoseToHistory([], doses)
+
+        self.assertListEqual(
+            [
+                {
+                    '_type': 'TempBasalDuration',
+                    'timestamp': '2015-09-19T20:25:27.468623',
+                    'duration (min)': 30,
+                    'recieved': True,
+                    'temp': 'absolute',
+                    'rate': 1.425
+                },
+                {
+                    '_type': 'TempBasal',
+                    'timestamp': '2015-09-19T20:25:27.468623',
+                    'duration': 30,
+                    'recieved': True,
+                    'temp': 'absolute',
+                    'rate': 1.425
+                }
+            ],
+            h.appended_history
+        )
+
+    def test_append_no_dose(self):
+        h = AppendDoseToHistory([{'_type': 'Foo'}], [])
+
+        self.assertListEqual([{'_type': 'Foo'}], h.appended_history)
+
+    def test_append_multiple_doses(self):
+        with open(get_file_at_path('fixtures/set_two_doses.json')) as fp:
+            doses = json.load(fp)
+
+        h = AppendDoseToHistory([{'_type': 'Foo'}], doses)
+
+        self.assertListEqual(
+            [
+                {
+                    '_type': 'TempBasalDuration',
+                    'temp': 'percent',
+                    'recieved': True,
+                    'rate': 140,
+                    'timestamp': '2015-07-27T16:45:31.320183',
+                    'duration (min)': 30
+                },
+                {
+                    '_type': 'TempBasal',
+                    'temp': 'percent',
+                    'recieved': True,
+                    'rate': 140,
+                    'timestamp': '2015-07-27T16:45:31.320183',
+                    'duration': 30
+                },
+                {
+                    '_type': 'TempBasalDuration',
+                    'temp': 'percent',
+                    'recieved': True,
+                    'rate': 100,
+                    'timestamp': '2015-07-27T16:45:29.737754',
+                    'duration (min)': 0
+                },
+                {
+                    '_type': 'TempBasal',
+                    'temp': 'percent',
+                    'recieved': True,
+                    'rate': 100,
+                    'timestamp': '2015-07-27T16:45:29.737754',
+                    'duration': 0
+                },
+                {
+                    '_type': 'Foo'
+                }
+            ],
+            h.appended_history
         )

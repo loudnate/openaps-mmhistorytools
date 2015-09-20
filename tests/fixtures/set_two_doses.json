@@ -1,0 +1,18 @@
+[
+  {
+    "temp": "percent",
+    "recieved": true,
+    "rate": 100,
+    "timestamp": "2015-07-27T16:45:29.737754",
+    "duration": 0,
+    "type": "TempBasal"
+  },
+  {
+    "temp": "percent",
+    "recieved": true,
+    "rate": 140,
+    "timestamp": "2015-07-27T16:45:31.320183",
+    "duration": 30,
+    "type": "TempBasal"
+  }
+]

@@ -4,7 +4,7 @@ from datetime import datetime
 from datetime import timedelta
 from dateutil import parser
 
-from .models import Bolus, Meal, TempBasal, Unit
+from .models import Bolus, Meal, TempBasal, Exercise, Unit
 
 
 class ParseHistory(object):
@@ -254,6 +254,7 @@ class ResolveHistory(ParseHistory):
     - `Bolus`: Insulin delivery events in Units, or Units/hour
     - `Meal`: Grams of carbohydrate
     - `TempBasal`: Paced insulin delivery events in Units/hour, or Percent of scheduled basal
+    - `Exercise`: Exercise event
 
     The following history events are parsed:
 
@@ -263,6 +264,7 @@ class ResolveHistory(ParseHistory):
     - Normal Bolus is converted to a Bolus record
     - BolusWizard carb entry is converted to a Meal record
     - JournalEntryMealMarker is converted to a Meal record
+    - JournalEntryExerciseMarker is converted to an Exercise record
 
     Events that are not related to the record types or seem to have no effect are dropped.
     """
@@ -344,6 +346,18 @@ class ResolveHistory(ParseHistory):
                 unit=Unit.grams,
                 description='{}: {}g'.format(event["_type"], carb_input)
             )
+
+    def _decode_journalentryexercisemarker(self, event):
+        num_events = 1
+        start_at = self._event_datetime(event)
+
+        return Exercise(
+            start_at=start_at,
+            end_at=start_at,
+            amount=num_events,
+            unit=Unit.event,
+            description=event["_type"]
+        )
 
     def _decode_pumpresume(self, event):
         self._resume_datetime = self._event_datetime(event)
@@ -569,3 +583,46 @@ class NormalizeRecords(object):
                 )
 
                 return events
+
+
+class AppendDoseToHistory(ParseHistory):
+    """Append a dose record or records to a list of history records.
+
+    The expected dose record format is a dictionary with a key named "recieved" (sic).
+    If that key isn't present, or its value is false, the record is ignored.
+    """
+    def __init__(self, clean_history, doses):
+        """Initializes a new instance of the history parser
+
+        :param clean_history: A list of pump history events in reverse-chronological order
+        :type clean_history: list(dict)
+        :param doses: A single dose event, or a list of dose events in chronological order
+        :type doses: list(dict)|dict
+        """
+        self.appended_history = clean_history
+
+        if isinstance(doses, dict):
+            doses = [doses]
+
+        for event in doses:
+            if event.get('recieved', False) is True:
+                self.add_history_event(event)
+
+    def add_history_event(self, event):
+        try:
+            decoded = getattr(self, '_decode_{}'.format(event['type'].lower()))(event)
+        except AttributeError:
+            decoded = [event]
+
+        for decoded_event in decoded:
+            self.appended_history.insert(0, decoded_event)
+
+    def _decode_tempbasal(self, event):
+        amount_event = copy(event)
+        amount_event['_type'] = amount_event.pop('type')
+
+        duration_event = copy(event)
+        duration_event['_type'] = '{}Duration'.format(duration_event.pop('type'))
+        duration_event[self.DURATION_IN_MINUTES_KEY] = duration_event.pop('duration')
+
+        return [amount_event, duration_event]

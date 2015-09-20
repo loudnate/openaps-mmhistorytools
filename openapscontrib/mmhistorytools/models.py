@@ -41,11 +41,16 @@ class TempBasal(BaseRecord):
     pass
 
 
+class Exercise(BaseRecord):
+    pass
+
+
 class Unit(object):
     grams = "g"
     percent_of_basal = "percent"
     units = "U"
     units_per_hour = "U/hour"
+    event = "event"
 
 
 class RecordJSONEncoder(json.JSONEncoder):
