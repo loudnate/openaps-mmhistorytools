@@ -88,12 +88,17 @@ Add a report flow to process pump history for analysis:
 $ openaps report add clean_history.json JSON history clean pump_history.json
 $ openaps report add reconciled_history.json JSON history reconcile clean_history.json
 $ openaps report add resolved_history.json JSON history resolve reconciled_history.json
-$ openaps report add normalized_history.json JSON history normalize resolved_history.json --basal-profile basal.json --zero-at read_clock.json
+$ openaps report add normalized_history.json JSON history normalize resolved_history.json --basal-profile basal.json
+```
+
+This common flow is also available with the `prepare` command shortcut:
+```
+$ openaps report add prepared_history.json JSON history prepare pump_history.json --basal-profile basal.json
 ```
 
 All `infile` arguments default to accept stdin, so commands can be chained to simplify testing:
 ```bash
-$ openaps use pump iter_pump_hours 4 | openaps use history clean | openaps use history reconcile | openaps use history resolve | openaps use history normalize --basal-profile basal.json --zero-at read_clock.json
+$ openaps use pump iter_pump_hours 4 | openaps use history clean | openaps use history reconcile | openaps use history resolve | openaps use history normalize --basal-profile basal.json
 ```
 
 ## Contributing

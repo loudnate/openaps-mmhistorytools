@@ -1704,3 +1704,84 @@ class AppendDoseToHistoryTestCase(unittest.TestCase):
             ],
             h.appended_history
         )
+
+    def test_temp_basal_suspend_without_resume(self):
+        with open(get_file_at_path('fixtures/temp_basal_suspend.json')) as fp:
+            doses = json.load(fp)
+
+        trim = TrimHistory(
+            doses,
+            start_datetime=parser.parse('2015-06-13T14:37:58'),
+            end_datetime=parser.parse('2015-06-13T14:57:0')
+        )
+
+        clean = CleanHistory(trim.trimmed_history)
+
+        h = ReconcileHistory(clean.clean_history)
+
+        self.assertListEqual(
+            [
+                {
+                    "_type": "TempBasalDuration",
+                    "duration (min)": 43,
+                    "_description": "TempBasalDuration generated due to interleaved PumpSuspend event",
+                    "timestamp": "2015-06-13T14:54:19",
+                    "_body": "",
+                    "_head": "1602",
+                    "_date": "7aa50e0d0f"
+                },
+                {
+                    "_type": "TempBasal",
+                    "temp": "percent",
+                    "_description": "TempBasal generated due to interleaved PumpSuspend event",
+                    "timestamp": "2015-06-13T14:54:19",
+                    "_body": "08",
+                    "_head": "3378",
+                    "rate": 120,
+                    "_date": "7aa50e0d0f"
+                },
+                {
+                    "_type": "PumpResume",
+                    "timestamp": "2015-06-13T14:54:19"
+                },
+                {
+                    "_type": "PumpSuspend",
+                    "_description": "PumpSuspend 2015-06-13T14:54:19 head[2], body[0] op[0x1e]",
+                    "timestamp": "2015-06-13T14:54:19",
+                    "_body": "",
+                    "_head": "1e01",
+                    "_date": "53b60e0d0f"
+                },
+                {
+                    "alarm_type": 101,
+                    "_type": "SensorAlert",
+                    "alarm_description": "High Glucose",
+                    "_description": "SensorAlert 2015-06-13T14:38:29 head[3], body[0] op[0x0b]",
+                    "timestamp": "2015-06-13T14:38:29",
+                    "_body": "",
+                    "_head": "0b65e2",
+                    "amount": 226,
+                    "_date": "5da62ead0f"
+                },
+                {
+                    "_type": "TempBasalDuration",
+                    "duration (min)": 16,
+                    "_description": "TempBasalDuration 2015-06-13T14:37:58 head[2], body[0] op[0x16]",
+                    "timestamp": "2015-06-13T14:37:58",
+                    "_body": "",
+                    "_head": "1602",
+                    "_date": "7aa50e0d0f"
+                },
+                {
+                    "_type": "TempBasal",
+                    "temp": "percent",
+                    "_description": "TempBasal 2015-06-13T14:37:58 head[2], body[1] op[0x33]",
+                    "timestamp": "2015-06-13T14:37:58",
+                    "_body": "08",
+                    "_head": "3378",
+                    "rate": 120,
+                    "_date": "7aa50e0d0f"
+                }
+            ],
+            h.reconciled_history
+        )
