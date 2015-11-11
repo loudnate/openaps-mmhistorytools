@@ -14,6 +14,7 @@ from openaps.uses.use import Use
 from historytools import TrimHistory, CleanHistory, ReconcileHistory
 from historytools import ResolveHistory, NormalizeRecords
 from historytools import AppendDoseToHistory
+from historytools import append_reservoir_entry_to_history
 
 
 # set_config is needed by openaps for all vendors.
@@ -385,3 +386,61 @@ has occurred, output from this command may not be sufficient for debugging.
         normalized_records = NormalizeRecords(resolved_records, **kwargs).normalized_records
 
         return normalized_records
+
+
+# noinspection PyPep8Naming
+class append_reservoir(BaseUse):
+    """Appends a reservoir value and clock time to a sequence of history
+    """
+
+    def configure_app(self, app, parser):
+        super(append_reservoir, self).configure_app(app, parser)
+
+        parser.add_argument(
+            'reservoir',
+            help='JSON-encoded reservoir value file'
+        )
+
+        parser.add_argument(
+            '--clock',
+            help='The timestamp at which temp basal dosing should be assumed to end, '
+                 'as a JSON-encoded pump clock file'
+        )
+
+        parser.add_argument(
+            '--hours',
+            nargs=argparse.OPTIONAL,
+            help='The length of history to keep, in hours'
+        )
+
+    def get_params(self, args):
+        params = super(append_reservoir, self).get_params(args)
+
+        args_dict = dict(**args.__dict__)
+
+        for key in ('reservoir', 'clock', 'hours'):
+            value = args_dict.get(key)
+            if value is not None:
+                params[key] = value
+
+        return params
+
+    def get_program(self, params):
+        args, kwargs = super(append_reservoir, self).get_program(params)
+
+        args += [
+            float(_opt_json_file(params.get('reservoir'))),
+            parse(_opt_json_file(params.get('clock')))
+        ]
+
+        if params.get('hours'):
+            kwargs.update(
+                lookback_hours=float(params['hours'])
+            )
+
+        return args, kwargs
+
+    def main(self, args, app):
+        args, kwargs = self.get_program(self.get_params(args))
+
+        return append_reservoir_entry_to_history(*args, **kwargs)

@@ -627,3 +627,28 @@ class AppendDoseToHistory(ParseHistory):
         duration_event[self.DURATION_IN_MINUTES_KEY] = duration_event.pop('duration')
 
         return [amount_event, duration_event]
+
+
+def append_reservoir_entry_to_history(history, reservoir, date, lookback_hours=4.0):
+    """Append a reservoir value and clock time to a history of reservoir entries.
+
+    :param history: The existing history of reservoir values, in chronological order
+    :type history: list(dict)
+    :param reservoir: The new reservoir value
+    :type reservoir: float
+    :param date: The current date
+    :type date: datetime
+    :param lookback_hours: The length of history to keep
+    :type lookback_hours: float
+    :return: A new list of historical reservoir values
+    :rtype: list(dict)
+    """
+    history.append({
+        'date': date.isoformat(),
+        'amount': reservoir,
+        'unit': Unit.units
+    })
+
+    start_at = (date - timedelta(hours=lookback_hours)).isoformat()
+
+    return filter(lambda y: y['date'] >= start_at, history)
