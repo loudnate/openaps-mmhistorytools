@@ -340,7 +340,7 @@ If that key isn't present, or its value is false, the record is ignored.
 
         for key in ('dose', 'resolve'):
             value = args_dict.get(key)
-            if value is not None:
+            if value:
                 params[key] = value
 
         return params
