@@ -682,4 +682,7 @@ def convert_reservoir_history_to_temp_basal(history):
             )
         )
 
+        last_entry = entry
+        last_datetime = entry_datetime
+
     return doses
