@@ -652,3 +652,34 @@ def append_reservoir_entry_to_history(history, reservoir, date, lookback_hours=4
     start_at = (date - timedelta(hours=lookback_hours)).isoformat()
 
     return filter(lambda y: y['date'] >= start_at, history)
+
+
+def convert_reservoir_history_to_temp_basal(history):
+    """
+
+    :param history: The history of reservoir values, in chronological order
+    :type history: list(dict)
+    :return: A list of resolved TempBasal doses
+    :rtype: list(TempBasal)
+    """
+    last_entry = history[0]
+    last_datetime = parser.parse(last_entry['date'])
+    doses = []
+
+    for entry in history[1:]:
+        entry_datetime = parser.parse(entry['date'])
+        volume_drop = last_entry['amount'] - entry['amount']
+        minutes_elapsed = (entry_datetime - last_datetime).total_seconds() / 60.0
+
+        doses.insert(
+            0,
+            TempBasal(
+                start_at=last_datetime,
+                end_at=entry_datetime,
+                amount=volume_drop * 60.0 / minutes_elapsed,
+                unit=Unit.units_per_hour,
+                description='Reservoir decreased {}U over {:.2f}min'.format(volume_drop, minutes_elapsed)
+            )
+        )
+
+    return doses

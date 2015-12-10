@@ -15,6 +15,7 @@ from historytools import TrimHistory, CleanHistory, ReconcileHistory
 from historytools import ResolveHistory, NormalizeRecords
 from historytools import AppendDoseToHistory
 from historytools import append_reservoir_entry_to_history
+from historytools import convert_reservoir_history_to_temp_basal
 
 
 # set_config is needed by openaps for all vendors.
@@ -40,7 +41,17 @@ def display_device(device):
 # agp as a vendor.  Return a list of classes which inherit from Use,
 # or are compatible with it:
 def get_uses(device, config):
-    return [trim, clean, reconcile, resolve, normalize, prepare, append_dose, append_reservoir]
+    return [
+        trim,
+        clean,
+        reconcile,
+        resolve,
+        normalize,
+        prepare,
+        append_dose,
+        append_reservoir,
+        resolve_reservoir
+    ]
 
 
 def _opt_date(timestamp):
@@ -444,3 +455,14 @@ class append_reservoir(BaseUse):
         args, kwargs = self.get_program(self.get_params(args))
 
         return append_reservoir_entry_to_history(*args, **kwargs)
+
+
+# noinspection PyPep8Naming
+class resolve_reservoir(BaseUse):
+    """Converts a sequence of pump reservoir history to temporary basal records
+    """
+
+    def main(self, args, app):
+        args, _ = self.get_program(self.get_params(args))
+
+        return convert_reservoir_history_to_temp_basal(*args)
