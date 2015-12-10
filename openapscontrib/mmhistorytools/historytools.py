@@ -680,16 +680,17 @@ def convert_reservoir_history_to_temp_basal(history):
         volume_drop = last_entry['amount'] - entry['amount']
         minutes_elapsed = (entry_datetime - last_datetime).total_seconds() / 60.0
 
-        doses.insert(
-            0,
-            TempBasal(
-                start_at=last_datetime,
-                end_at=entry_datetime,
-                amount=volume_drop * 60.0 / minutes_elapsed,
-                unit=Unit.units_per_hour,
-                description='Reservoir decreased {}U over {:.2f}min'.format(volume_drop, minutes_elapsed)
+        if volume_drop <= 0:
+            doses.insert(
+                0,
+                TempBasal(
+                    start_at=last_datetime,
+                    end_at=entry_datetime,
+                    amount=volume_drop * 60.0 / minutes_elapsed,
+                    unit=Unit.units_per_hour,
+                    description='Reservoir decreased {}U over {:.2f}min'.format(volume_drop, minutes_elapsed)
+                )
             )
-        )
 
         last_entry = entry
         last_datetime = entry_datetime
