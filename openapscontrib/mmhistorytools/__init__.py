@@ -327,10 +327,21 @@ If that key isn't present, or its value is false, the record is ignored.
             help='JSON-encoded dosing report'
         )
 
+        parser.add_argument(
+            '--resolve',
+            action='store_true',
+            help='Resolve the dose before appending'
+        )
+
     def get_params(self, args):
         params = super(append_dose, self).get_params(args)
 
-        params.update(dose=args.dose)
+        args_dict = dict(**args.__dict__)
+
+        for key in ('dose', 'resolve'):
+            value = args_dict.get(key)
+            if value is not None:
+                params[key] = value
 
         return params
 
@@ -339,12 +350,15 @@ If that key isn't present, or its value is false, the record is ignored.
 
         args.append(_opt_json_file(params['dose']))
 
+        if params.get('resolve'):
+            kwargs['should_resolve'] = True
+
         return args, kwargs
 
     def main(self, args, app):
-        args, _ = self.get_program(self.get_params(args))
+        args, kwargs = self.get_program(self.get_params(args))
 
-        tool = AppendDoseToHistory(*args)
+        tool = AppendDoseToHistory(*args, **kwargs)
 
         return tool.appended_history
 

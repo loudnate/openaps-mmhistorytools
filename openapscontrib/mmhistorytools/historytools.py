@@ -14,6 +14,26 @@ class ParseHistory(object):
     def _event_datetime(event):
         return parser.parse(event["timestamp"])
 
+    def _resolve_tempbasal(self, event, duration):
+        start_at = self._event_datetime(event)
+        end_at = start_at + timedelta(minutes=duration)
+
+        if end_at > start_at:
+            amount = event["rate"]
+            unit = Unit.percent_of_basal if event["temp"] == "percent" else Unit.units_per_hour
+
+            return TempBasal(
+                start_at=start_at,
+                end_at=end_at,
+                amount=amount,
+                unit=unit,
+                description="TempBasal: {}{} over {}min".format(
+                    amount,
+                    '%' if unit == Unit.percent_of_basal else unit,
+                    duration
+                )
+            )
+
 
 class TrimHistory(ParseHistory):
     """Trims Medtronic pump history to a specified time window"""
@@ -384,24 +404,7 @@ class ResolveHistory(ParseHistory):
     def _decode_tempbasal(self, event):
         assert self._temp_basal_duration is not None, "Temp basal duration not found"
 
-        start_at = self._event_datetime(event)
-        end_at = start_at + timedelta(minutes=self._temp_basal_duration)
-
-        if end_at > start_at:
-            amount = event["rate"]
-            unit = Unit.percent_of_basal if event["temp"] == "percent" else Unit.units_per_hour
-
-            return TempBasal(
-                start_at=start_at,
-                end_at=end_at,
-                amount=amount,
-                unit=unit,
-                description="TempBasal: {}{} over {}min".format(
-                    amount,
-                    '%' if unit == Unit.percent_of_basal else unit,
-                    self._temp_basal_duration
-                )
-            )
+        return self._resolve_tempbasal(event, self._temp_basal_duration)
 
     def _decode_tempbasalduration(self, event):
         self._temp_basal_duration = event[self.DURATION_IN_MINUTES_KEY]
@@ -592,7 +595,7 @@ class AppendDoseToHistory(ParseHistory):
     The expected dose record format is a dictionary with a key named "recieved" (sic).
     If that key isn't present, or its value is false, the record is ignored.
     """
-    def __init__(self, clean_history, doses):
+    def __init__(self, clean_history, doses, should_resolve=False):
         """Initializes a new instance of the history parser
 
         :param clean_history: A list of pump history events in reverse-chronological order
@@ -601,6 +604,7 @@ class AppendDoseToHistory(ParseHistory):
         :type doses: list(dict)|dict
         """
         self.appended_history = clean_history
+        self.should_resolve = should_resolve
 
         if isinstance(doses, dict):
             doses = [doses]
@@ -626,7 +630,12 @@ class AppendDoseToHistory(ParseHistory):
         duration_event['_type'] = '{}Duration'.format(duration_event.pop('type'))
         duration_event[self.DURATION_IN_MINUTES_KEY] = duration_event.pop('duration')
 
-        return [amount_event, duration_event]
+        events = [amount_event, duration_event]
+
+        if self.should_resolve:
+            events = filter(None, [self._resolve_tempbasal(amount_event, duration_event[self.DURATION_IN_MINUTES_KEY])])
+
+        return events
 
 
 def append_reservoir_entry_to_history(history, reservoir, date, lookback_hours=4.0):
