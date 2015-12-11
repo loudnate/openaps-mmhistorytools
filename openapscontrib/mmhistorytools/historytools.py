@@ -27,10 +27,10 @@ class ParseHistory(object):
                 end_at=end_at,
                 amount=amount,
                 unit=unit,
-                description="TempBasal: {}{} over {}min".format(
+                description="TempBasal: {}{} over {:d}min".format(
                     amount,
                     '%' if unit == Unit.percent_of_basal else unit,
-                    duration
+                    int(round(duration))
                 )
             )
 
@@ -211,9 +211,9 @@ class ReconcileHistory(ParseHistory):
             basal_start_datetime, basal_end_datetime = self._basal_event_datetimes(basal_event)
 
             if basal_end_datetime > trim_datetime:
-                basal_event[self.DURATION_IN_MINUTES_KEY] = int(
-                    (trim_datetime - basal_start_datetime).total_seconds() / 60.0
-                )
+                basal_event[self.DURATION_IN_MINUTES_KEY] = (
+                    trim_datetime - basal_start_datetime
+                ).total_seconds() / 60.0
 
     def _decode_pumpresume(self, event):
         events = [event]

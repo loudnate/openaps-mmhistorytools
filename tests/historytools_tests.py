@@ -459,7 +459,7 @@ class ReconcileHistoryTestCase(unittest.TestCase):
                 },
                 {
                     "_type": "TempBasalDuration",
-                    "duration (min)": 10,
+                    "duration (min)": 10.5,
                     "_description": "TempBasalDuration 2015-06-06T20:39:45 head[2], body[0] "
                                     "op[0x16]",
                     "timestamp": "2015-06-06T20:39:45",
@@ -547,7 +547,7 @@ class ReconcileHistoryTestCase(unittest.TestCase):
                 },
                 {
                     "_type": "TempBasalDuration",
-                    "duration (min)": 16,
+                    "duration (min)": 16.35,
                     "_description": "TempBasalDuration 2015-06-13T14:37:58 head[2], body[0] "
                                     "op[0x16]",
                     "timestamp": "2015-06-13T14:37:58",
@@ -1132,10 +1132,10 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                 {
                     "type": "TempBasal",
                     "start_at": -11,
-                    "end_at": -1,
+                    "end_at": 0,
                     "amount": 1.2 - 0.8,
                     "unit": "U/hour",
-                    "description": "TempBasal: 150% over 10min"
+                    "description": "TempBasal: 150% over 11min"
                 },
                 {
                     "type": "Bolus",
@@ -1452,10 +1452,18 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                 {
                     "type": "TempBasal",
                     "start_at": -507,
-                    "end_at": -425,
+                    "end_at": -424,
                     "amount": 0.75,
                     "unit": "U/hour",
-                    "description": "TempBasal: 200% over 82min"
+                    "description": "TempBasal: 200% over 83min"
+                },
+                {
+                    "type": "TempBasal",
+                    "start_at": -508,
+                    "end_at": -507,
+                    "amount": 0.645,
+                    "unit": "U/hour",
+                    "description": "TempBasal: 186% over 1min"
                 },
                 {
                     "type": "Bolus",
@@ -1577,7 +1585,7 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                 },
                 {
                     "_type": "TempBasalDuration",
-                    "duration (min)": 16,
+                    "duration (min)": 16.35,
                     "_description": "TempBasalDuration 2015-06-13T14:37:58 head[2], body[0] op[0x16]",
                     "timestamp": "2015-06-13T14:37:58",
                     "_body": "",
