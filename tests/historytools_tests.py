@@ -459,7 +459,7 @@ class ReconcileHistoryTestCase(unittest.TestCase):
                 },
                 {
                     "_type": "TempBasalDuration",
-                    "duration (min)": 10,
+                    "duration (min)": 10.5,
                     "_description": "TempBasalDuration 2015-06-06T20:39:45 head[2], body[0] "
                                     "op[0x16]",
                     "timestamp": "2015-06-06T20:39:45",
@@ -547,7 +547,7 @@ class ReconcileHistoryTestCase(unittest.TestCase):
                 },
                 {
                     "_type": "TempBasalDuration",
-                    "duration (min)": 16,
+                    "duration (min)": 16.35,
                     "_description": "TempBasalDuration 2015-06-13T14:37:58 head[2], body[0] "
                                     "op[0x16]",
                     "timestamp": "2015-06-13T14:37:58",
@@ -1132,10 +1132,10 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                 {
                     "type": "TempBasal",
                     "start_at": -11,
-                    "end_at": -1,
+                    "end_at": 0,
                     "amount": 1.2 - 0.8,
                     "unit": "U/hour",
-                    "description": "TempBasal: 150% over 10min"
+                    "description": "TempBasal: 150% over 11min"
                 },
                 {
                     "type": "Bolus",
@@ -1452,10 +1452,18 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
                 {
                     "type": "TempBasal",
                     "start_at": -507,
-                    "end_at": -425,
+                    "end_at": -424,
                     "amount": 0.75,
                     "unit": "U/hour",
-                    "description": "TempBasal: 200% over 82min"
+                    "description": "TempBasal: 200% over 83min"
+                },
+                {
+                    "type": "TempBasal",
+                    "start_at": -508,
+                    "end_at": -507,
+                    "amount": 0.645,
+                    "unit": "U/hour",
+                    "description": "TempBasal: 186% over 1min"
                 },
                 {
                     "type": "Bolus",
@@ -1517,6 +1525,87 @@ class MungeFixturesTestCase(BasalScheduleTestCase):
             records
         )
 
+    def test_temp_basal_suspend_without_resume(self):
+        with open(get_file_at_path('fixtures/temp_basal_suspend.json')) as fp:
+            doses = json.load(fp)
+
+        trim = TrimHistory(
+            doses,
+            start_datetime=parser.parse('2015-06-13T14:37:58'),
+            end_datetime=parser.parse('2015-06-13T14:57:0')
+        )
+
+        clean = CleanHistory(trim.trimmed_history)
+
+        h = ReconcileHistory(clean.clean_history)
+
+        self.assertListEqual(
+            [
+                {
+                    "_type": "TempBasalDuration",
+                    "duration (min)": 43,
+                    "_description": "TempBasalDuration generated due to interleaved PumpSuspend event",
+                    "timestamp": "2015-06-13T14:54:19",
+                    "_body": "",
+                    "_head": "1602",
+                    "_date": "7aa50e0d0f"
+                },
+                {
+                    "_type": "TempBasal",
+                    "temp": "percent",
+                    "_description": "TempBasal generated due to interleaved PumpSuspend event",
+                    "timestamp": "2015-06-13T14:54:19",
+                    "_body": "08",
+                    "_head": "3378",
+                    "rate": 120,
+                    "_date": "7aa50e0d0f"
+                },
+                {
+                    "_type": "PumpResume",
+                    "timestamp": "2015-06-13T14:54:19"
+                },
+                {
+                    "_type": "PumpSuspend",
+                    "_description": "PumpSuspend 2015-06-13T14:54:19 head[2], body[0] op[0x1e]",
+                    "timestamp": "2015-06-13T14:54:19",
+                    "_body": "",
+                    "_head": "1e01",
+                    "_date": "53b60e0d0f"
+                },
+                {
+                    "alarm_type": 101,
+                    "_type": "SensorAlert",
+                    "alarm_description": "High Glucose",
+                    "_description": "SensorAlert 2015-06-13T14:38:29 head[3], body[0] op[0x0b]",
+                    "timestamp": "2015-06-13T14:38:29",
+                    "_body": "",
+                    "_head": "0b65e2",
+                    "amount": 226,
+                    "_date": "5da62ead0f"
+                },
+                {
+                    "_type": "TempBasalDuration",
+                    "duration (min)": 16.35,
+                    "_description": "TempBasalDuration 2015-06-13T14:37:58 head[2], body[0] op[0x16]",
+                    "timestamp": "2015-06-13T14:37:58",
+                    "_body": "",
+                    "_head": "1602",
+                    "_date": "7aa50e0d0f"
+                },
+                {
+                    "_type": "TempBasal",
+                    "temp": "percent",
+                    "_description": "TempBasal 2015-06-13T14:37:58 head[2], body[1] op[0x33]",
+                    "timestamp": "2015-06-13T14:37:58",
+                    "_body": "08",
+                    "_head": "3378",
+                    "rate": 120,
+                    "_date": "7aa50e0d0f"
+                }
+            ],
+            h.reconciled_history
+        )
+
 
 class AppendDoseToHistoryTestCase(unittest.TestCase):
     def test_append_single_dose(self):
@@ -1550,6 +1639,25 @@ class AppendDoseToHistoryTestCase(unittest.TestCase):
             h.appended_history
         )
 
+        h = AppendDoseToHistory([{'type': 'Foo'}], doses, should_resolve=True)
+
+        self.assertListEqual(
+            [
+                {
+                    'type': 'TempBasal',
+                    'start_at': '2015-09-19T20:25:27.468623',
+                    'end_at': '2015-09-19T20:55:27.468623',
+                    'amount': 1.425,
+                    'unit': 'U/hour',
+                    'description': 'TempBasal: 1.425U/hour over 30min'
+                },
+                {
+                    'type': 'Foo'
+                }
+            ],
+            h.appended_history
+        )
+
     def test_append_single_dose_dict(self):
         with open(get_file_at_path('fixtures/set_dose.json')) as fp:
             doses = json.load(fp)
@@ -1576,6 +1684,25 @@ class AppendDoseToHistoryTestCase(unittest.TestCase):
                 },
                 {
                     '_type': 'Foo'
+                }
+            ],
+            h.appended_history
+        )
+
+        h = AppendDoseToHistory([{'type': 'Foo'}], doses[0], should_resolve=True)
+
+        self.assertListEqual(
+            [
+                {
+                    'type': 'TempBasal',
+                    'start_at': '2015-09-19T20:25:27.468623',
+                    'end_at': '2015-09-19T20:55:27.468623',
+                    'amount': 1.425,
+                    'unit': 'U/hour',
+                    'description': 'TempBasal: 1.425U/hour over 30min'
+                },
+                {
+                    'type': 'Foo'
                 }
             ],
             h.appended_history
@@ -1653,10 +1780,30 @@ class AppendDoseToHistoryTestCase(unittest.TestCase):
             h.appended_history
         )
 
+        h = AppendDoseToHistory([], doses, should_resolve=True)
+
+        self.assertListEqual(
+            [
+                {
+                    'type': 'TempBasal',
+                    'start_at': '2015-09-19T20:25:27.468623',
+                    'end_at': '2015-09-19T20:55:27.468623',
+                    'amount': 1.425,
+                    'unit': 'U/hour',
+                    'description': 'TempBasal: 1.425U/hour over 30min'
+                }
+            ],
+            h.appended_history
+        )
+
     def test_append_no_dose(self):
         h = AppendDoseToHistory([{'_type': 'Foo'}], [])
 
         self.assertListEqual([{'_type': 'Foo'}], h.appended_history)
+
+        h = AppendDoseToHistory([{'type': 'Foo'}], [], should_resolve=True)
+
+        self.assertListEqual([{'type': 'Foo'}], h.appended_history)
 
     def test_append_multiple_doses(self):
         with open(get_file_at_path('fixtures/set_two_doses.json')) as fp:
@@ -1705,83 +1852,21 @@ class AppendDoseToHistoryTestCase(unittest.TestCase):
             h.appended_history
         )
 
-    def test_temp_basal_suspend_without_resume(self):
-        with open(get_file_at_path('fixtures/temp_basal_suspend.json')) as fp:
-            doses = json.load(fp)
-
-        trim = TrimHistory(
-            doses,
-            start_datetime=parser.parse('2015-06-13T14:37:58'),
-            end_datetime=parser.parse('2015-06-13T14:57:0')
-        )
-
-        clean = CleanHistory(trim.trimmed_history)
-
-        h = ReconcileHistory(clean.clean_history)
+        h = AppendDoseToHistory([{'type': 'Foo'}], doses, should_resolve=True)
 
         self.assertListEqual(
             [
                 {
-                    "_type": "TempBasalDuration",
-                    "duration (min)": 43,
-                    "_description": "TempBasalDuration generated due to interleaved PumpSuspend event",
-                    "timestamp": "2015-06-13T14:54:19",
-                    "_body": "",
-                    "_head": "1602",
-                    "_date": "7aa50e0d0f"
+                    'type': 'TempBasal',
+                    'start_at': '2015-07-27T16:45:31.320183',
+                    'end_at': '2015-07-27T17:15:31.320183',
+                    'amount': 140,
+                    'unit': 'percent',
+                    'description': 'TempBasal: 140% over 30min'
                 },
                 {
-                    "_type": "TempBasal",
-                    "temp": "percent",
-                    "_description": "TempBasal generated due to interleaved PumpSuspend event",
-                    "timestamp": "2015-06-13T14:54:19",
-                    "_body": "08",
-                    "_head": "3378",
-                    "rate": 120,
-                    "_date": "7aa50e0d0f"
-                },
-                {
-                    "_type": "PumpResume",
-                    "timestamp": "2015-06-13T14:54:19"
-                },
-                {
-                    "_type": "PumpSuspend",
-                    "_description": "PumpSuspend 2015-06-13T14:54:19 head[2], body[0] op[0x1e]",
-                    "timestamp": "2015-06-13T14:54:19",
-                    "_body": "",
-                    "_head": "1e01",
-                    "_date": "53b60e0d0f"
-                },
-                {
-                    "alarm_type": 101,
-                    "_type": "SensorAlert",
-                    "alarm_description": "High Glucose",
-                    "_description": "SensorAlert 2015-06-13T14:38:29 head[3], body[0] op[0x0b]",
-                    "timestamp": "2015-06-13T14:38:29",
-                    "_body": "",
-                    "_head": "0b65e2",
-                    "amount": 226,
-                    "_date": "5da62ead0f"
-                },
-                {
-                    "_type": "TempBasalDuration",
-                    "duration (min)": 16,
-                    "_description": "TempBasalDuration 2015-06-13T14:37:58 head[2], body[0] op[0x16]",
-                    "timestamp": "2015-06-13T14:37:58",
-                    "_body": "",
-                    "_head": "1602",
-                    "_date": "7aa50e0d0f"
-                },
-                {
-                    "_type": "TempBasal",
-                    "temp": "percent",
-                    "_description": "TempBasal 2015-06-13T14:37:58 head[2], body[1] op[0x33]",
-                    "timestamp": "2015-06-13T14:37:58",
-                    "_body": "08",
-                    "_head": "3378",
-                    "rate": 120,
-                    "_date": "7aa50e0d0f"
+                    'type': 'Foo'
                 }
             ],
-            h.reconciled_history
+            h.appended_history
         )
