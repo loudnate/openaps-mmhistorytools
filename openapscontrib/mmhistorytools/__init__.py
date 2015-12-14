@@ -15,6 +15,7 @@ from historytools import TrimHistory, CleanHistory, ReconcileHistory
 from historytools import ResolveHistory, NormalizeRecords
 from historytools import AppendDoseToHistory
 from historytools import append_reservoir_entry_to_history
+from historytools import convert_reservoir_history_to_temp_basal
 
 
 # set_config is needed by openaps for all vendors.
@@ -40,7 +41,17 @@ def display_device(device):
 # agp as a vendor.  Return a list of classes which inherit from Use,
 # or are compatible with it:
 def get_uses(device, config):
-    return [trim, clean, reconcile, resolve, normalize, prepare, append_dose, append_reservoir]
+    return [
+        trim,
+        clean,
+        reconcile,
+        resolve,
+        normalize,
+        prepare,
+        append_dose,
+        append_reservoir,
+        resolve_reservoir
+    ]
 
 
 def _opt_date(timestamp):
@@ -316,10 +327,21 @@ If that key isn't present, or its value is false, the record is ignored.
             help='JSON-encoded dosing report'
         )
 
+        parser.add_argument(
+            '--resolve',
+            action='store_true',
+            help='Resolve the dose before appending'
+        )
+
     def get_params(self, args):
         params = super(append_dose, self).get_params(args)
 
-        params.update(dose=args.dose)
+        args_dict = dict(**args.__dict__)
+
+        for key in ('dose', 'resolve'):
+            value = args_dict.get(key)
+            if value:
+                params[key] = value
 
         return params
 
@@ -328,12 +350,15 @@ If that key isn't present, or its value is false, the record is ignored.
 
         args.append(_opt_json_file(params['dose']))
 
+        if params.get('resolve'):
+            kwargs['should_resolve'] = True
+
         return args, kwargs
 
     def main(self, args, app):
-        args, _ = self.get_program(self.get_params(args))
+        args, kwargs = self.get_program(self.get_params(args))
 
-        tool = AppendDoseToHistory(*args)
+        tool = AppendDoseToHistory(*args, **kwargs)
 
         return tool.appended_history
 
@@ -444,3 +469,14 @@ class append_reservoir(BaseUse):
         args, kwargs = self.get_program(self.get_params(args))
 
         return append_reservoir_entry_to_history(*args, **kwargs)
+
+
+# noinspection PyPep8Naming
+class resolve_reservoir(BaseUse):
+    """Converts a sequence of pump reservoir history to temporary basal records
+    """
+
+    def main(self, args, app):
+        args, _ = self.get_program(self.get_params(args))
+
+        return convert_reservoir_history_to_temp_basal(*args)
