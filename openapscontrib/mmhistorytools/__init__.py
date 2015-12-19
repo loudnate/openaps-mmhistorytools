@@ -153,7 +153,7 @@ class trim(BaseUse):
 
         kwargs.update(
             start_datetime=_opt_date_or_json_file(params.get('start')),
-            end_datetime=_opt_date(params.get('end')),
+            end_datetime=_opt_date_or_json_file(params.get('end')),
             duration_hours=float(params['duration']) if 'duration' in params else None
         )
 
