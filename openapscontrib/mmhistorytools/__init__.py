@@ -78,6 +78,13 @@ def _opt_json_file(filename):
         return json.load(argparse.FileType('r')(filename))
 
 
+def _opt_date_or_json_file(value):
+    try:
+        return _opt_date(value)
+    except ValueError:
+        return _opt_json_file(value)
+
+
 class BaseUse(Use):
     def configure_app(self, app, parser):
         """Define command arguments.
@@ -143,8 +150,9 @@ class trim(BaseUse):
 
     def get_program(self, params):
         args, kwargs = super(trim, self).get_program(params)
+
         kwargs.update(
-            start_datetime=_opt_date(params.get('start')),
+            start_datetime=_opt_date_or_json_file(params.get('start')),
             end_datetime=_opt_date(params.get('end')),
             duration_hours=float(params['duration']) if 'duration' in params else None
         )
