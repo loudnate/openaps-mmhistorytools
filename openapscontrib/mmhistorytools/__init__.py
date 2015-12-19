@@ -80,9 +80,9 @@ def _opt_json_file(filename):
 
 def _opt_date_or_json_file(value):
     try:
+        return _opt_date(_opt_json_file(value))
+    except argparse.ArgumentTypeError:
         return _opt_date(value)
-    except ValueError:
-        return _opt_json_file(value)
 
 
 class BaseUse(Use):
