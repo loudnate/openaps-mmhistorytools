@@ -1639,7 +1639,7 @@ class AppendDoseToHistoryTestCase(unittest.TestCase):
             h.appended_history
         )
 
-        h = AppendDoseToHistory([{'type': 'Foo'}], doses, should_resolve=True)
+        h = AppendDoseToHistory([{'type': 'Foo'}], doses, should_resolve_doses=True)
 
         self.assertListEqual(
             [
@@ -1689,7 +1689,7 @@ class AppendDoseToHistoryTestCase(unittest.TestCase):
             h.appended_history
         )
 
-        h = AppendDoseToHistory([{'type': 'Foo'}], doses[0], should_resolve=True)
+        h = AppendDoseToHistory([{'type': 'Foo'}], doses[0], should_resolve_doses=True)
 
         self.assertListEqual(
             [
@@ -1752,6 +1752,68 @@ class AppendDoseToHistoryTestCase(unittest.TestCase):
             h.appended_history[:3]
         )
 
+    def test_auto_resolve_during_append(self):
+        with open(get_file_at_path('fixtures/set_dose.json')) as fp:
+            doses = json.load(fp)
+
+        h = AppendDoseToHistory([
+            {
+                'start_at': '2015-09-19T20:22:00',
+                'end_at': '2015-09-19T20:26:00',
+                'type': 'TempBasal',
+                'unit': 'U/hour',
+                'amount': 2.4
+            }
+        ], doses)
+
+        self.assertListEqual(
+            [
+                {
+                    'start_at': '2015-09-19T20:26:00',
+                    'end_at': '2015-09-19T20:55:27.468623',
+                    'type': 'TempBasal',
+                    'unit': 'U/hour',
+                    'amount': 1.425,
+                    'description': 'TempBasal: 1.425U/hour over 30min'
+                },
+                {
+                    'start_at': '2015-09-19T20:22:00',
+                    'end_at': '2015-09-19T20:26:00',
+                    'type': 'TempBasal',
+                    'unit': 'U/hour',
+                    'amount': 2.4
+                }
+            ],
+            h.appended_history
+        )
+
+    def test_auto_resolve_old_dose(self):
+        with open(get_file_at_path('fixtures/set_dose.json')) as fp:
+            doses = json.load(fp)
+
+        h = AppendDoseToHistory([
+            {
+                'start_at': '2015-09-19T20:30:00',
+                'end_at': '2015-09-19T21:00:00',
+                'type': 'TempBasal',
+                'unit': 'U/hour',
+                'amount': 2.4
+            }
+        ], doses)
+
+        self.assertListEqual(
+                [
+                    {
+                        'start_at': '2015-09-19T20:30:00',
+                        'end_at': '2015-09-19T21:00:00',
+                        'type': 'TempBasal',
+                        'unit': 'U/hour',
+                        'amount': 2.4
+                    }
+                ],
+                h.appended_history
+        )
+
     def test_append_single_dose_to_empty_history(self):
         with open(get_file_at_path('fixtures/set_dose.json')) as fp:
             doses = json.load(fp)
@@ -1780,7 +1842,7 @@ class AppendDoseToHistoryTestCase(unittest.TestCase):
             h.appended_history
         )
 
-        h = AppendDoseToHistory([], doses, should_resolve=True)
+        h = AppendDoseToHistory([], doses, should_resolve_doses=True)
 
         self.assertListEqual(
             [
@@ -1801,7 +1863,7 @@ class AppendDoseToHistoryTestCase(unittest.TestCase):
 
         self.assertListEqual([{'_type': 'Foo'}], h.appended_history)
 
-        h = AppendDoseToHistory([{'type': 'Foo'}], [], should_resolve=True)
+        h = AppendDoseToHistory([{'type': 'Foo'}], [], should_resolve_doses=True)
 
         self.assertListEqual([{'type': 'Foo'}], h.appended_history)
 
@@ -1852,7 +1914,7 @@ class AppendDoseToHistoryTestCase(unittest.TestCase):
             h.appended_history
         )
 
-        h = AppendDoseToHistory([{'type': 'Foo'}], doses, should_resolve=True)
+        h = AppendDoseToHistory([{'type': 'Foo'}], doses, should_resolve_doses=True)
 
         self.assertListEqual(
             [

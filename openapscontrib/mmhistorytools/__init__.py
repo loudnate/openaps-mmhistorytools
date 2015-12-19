@@ -351,7 +351,7 @@ If that key isn't present, or its value is false, the record is ignored.
         args.append(_opt_json_file(params['dose']))
 
         if params.get('resolve'):
-            kwargs['should_resolve'] = True
+            kwargs['should_resolve_doses'] = True
 
         return args, kwargs
 

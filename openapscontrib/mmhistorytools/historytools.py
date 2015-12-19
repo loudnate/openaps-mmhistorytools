@@ -595,23 +595,44 @@ class AppendDoseToHistory(ParseHistory):
     The expected dose record format is a dictionary with a key named "recieved" (sic).
     If that key isn't present, or its value is false, the record is ignored.
     """
-    def __init__(self, clean_history, doses, should_resolve=False):
+    def __init__(self, clean_history, doses, should_resolve_doses=False):
         """Initializes a new instance of the history parser
 
         :param clean_history: A list of pump history events in reverse-chronological order
         :type clean_history: list(dict)
         :param doses: A single dose event, or a list of dose events in chronological order
         :type doses: list(dict)|dict
+        :param should_resolve_doses: Whether the dose records should be resolved to match the input history
+        :type should_resolve_doses: bool
         """
         self.appended_history = clean_history
-        self.should_resolve = should_resolve
+
+        # Try to determine if the history input is already resolved
+        self.should_resolve = should_resolve_doses or (len(clean_history) > 0 and 'start_at' in clean_history[0])
 
         if isinstance(doses, dict):
             doses = [doses]
 
         for event in doses:
             if event.get('recieved', False) is True:
+                # Determine if the dose duration should be modified on append.
+                reconcile_with = None
+                if self.should_resolve and \
+                        event['type'] == 'TempBasal' and \
+                        len(clean_history) > 0 and \
+                        clean_history[0].get('type') == 'TempBasal':
+                    reconcile_with = clean_history[0]
+
+                    # Ignore out-of-date doses
+                    if reconcile_with['start_at'] > event['timestamp']:
+                        continue
+
                 self.add_history_event(event)
+
+                if reconcile_with is not None:
+                    decoded_event = self.appended_history[0]
+                    if decoded_event['start_at'] > reconcile_with['start_at']:
+                        decoded_event['start_at'] = max(decoded_event['start_at'], reconcile_with.get('end_at'))
 
     def add_history_event(self, event):
         try:
