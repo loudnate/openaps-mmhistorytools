@@ -123,15 +123,21 @@ class trim(BaseUse):
             default=None,
             help='The final timestamp of the window to return'
         )
+        parser.add_argument(
+            '--duration',
+            default=None,
+            help='The length of the window to return, in hours'
+        )
 
     def get_params(self, args):
         params = super(trim, self).get_params(args)
 
-        if 'start' in args and args.start:
-            params.update(start=args.start)
+        args_dict = dict(**args.__dict__)
 
-        if 'end' in args and args.end:
-            params.update(end=args.end)
+        for key in ('start', 'end', 'duration'):
+            value = args_dict.get(key)
+            if value is not None:
+                params[key] = value
 
         return params
 
@@ -139,7 +145,8 @@ class trim(BaseUse):
         args, kwargs = super(trim, self).get_program(params)
         kwargs.update(
             start_datetime=_opt_date(params.get('start')),
-            end_datetime=_opt_date(params.get('end'))
+            end_datetime=_opt_date(params.get('end')),
+            duration_hours=float(params['duration']) if 'duration' in params else None
         )
 
         return args, kwargs
