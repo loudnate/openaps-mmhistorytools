@@ -110,6 +110,40 @@ class TrimHistoryTestCase(unittest.TestCase):
             [event['_description'] for event in h.trimmed_history]
         )
 
+    def test_trim_end_boundary_start_duration(self):
+        h = TrimHistory(
+            self.pump_history,
+            start_datetime=datetime(2015, 06, 19, 22),
+            duration_hours=6.0
+        )
+
+        self.assertListEqual(
+            [
+                'Bolus 2015-06-19T23:04:25 head[8], body[0] op[0x01]',
+                'LowReservoir 2015-06-19T23:05:19 head[2], body[0] op[0x34]',
+                'BolusWizard 2015-06-19T23:04:25 head[2], body[15] op[0x5b]',
+                'BasalProfileStart 2015-06-19T22:00:00 head[2], body[3] op[0x7b]'
+            ],
+            [event['_description'] for event in h.trimmed_history]
+        )
+
+    def test_trim_end_boundary_end_duration(self):
+        h = TrimHistory(
+            self.pump_history,
+            duration_hours=6.0,
+            end_datetime=datetime(2015, 06, 20, 04)
+        )
+
+        self.assertListEqual(
+            [
+                'Bolus 2015-06-19T23:04:25 head[8], body[0] op[0x01]',
+                'LowReservoir 2015-06-19T23:05:19 head[2], body[0] op[0x34]',
+                'BolusWizard 2015-06-19T23:04:25 head[2], body[15] op[0x5b]',
+                'BasalProfileStart 2015-06-19T22:00:00 head[2], body[3] op[0x7b]'
+            ],
+            [event['_description'] for event in h.trimmed_history]
+        )
+
     def test_trim_end_boundary_one_arg(self):
         h = TrimHistory(
             self.pump_history,
@@ -130,6 +164,42 @@ class TrimHistoryTestCase(unittest.TestCase):
             self.pump_history,
             start_datetime=datetime(2015, 06, 19, 04),
             end_datetime=datetime(2015, 06, 19, 22)
+        )
+
+        self.assertListEqual(
+            [
+                'BasalProfileStart 2015-06-19T22:00:00 head[2], body[3] op[0x7b]',
+                'Bolus 2015-06-19T21:31:15 head[8], body[0] op[0x01]',
+                'Bolus 2015-06-19T21:32:55 head[8], body[0] op[0x01]',
+                'BolusWizard 2015-06-19T21:31:15 head[2], body[15] op[0x5b]',
+                'Bolus 2015-06-19T21:02:39 head[8], body[0] op[0x01]'
+            ],
+            [event['_description'] for event in h.trimmed_history]
+        )
+
+    def test_trim_start_boundary_start_duration(self):
+        h = TrimHistory(
+            self.pump_history,
+            start_datetime=datetime(2015, 06, 19, 04),
+            duration_hours=18.0
+        )
+
+        self.assertListEqual(
+            [
+                'BasalProfileStart 2015-06-19T22:00:00 head[2], body[3] op[0x7b]',
+                'Bolus 2015-06-19T21:31:15 head[8], body[0] op[0x01]',
+                'Bolus 2015-06-19T21:32:55 head[8], body[0] op[0x01]',
+                'BolusWizard 2015-06-19T21:31:15 head[2], body[15] op[0x5b]',
+                'Bolus 2015-06-19T21:02:39 head[8], body[0] op[0x01]'
+            ],
+            [event['_description'] for event in h.trimmed_history]
+        )
+
+    def test_trim_start_boundary_end_duration(self):
+        h = TrimHistory(
+            self.pump_history,
+            end_datetime=datetime(2015, 06, 19, 22),
+            duration_hours=18.0
         )
 
         self.assertListEqual(
