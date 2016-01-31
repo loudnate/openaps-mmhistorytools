@@ -11,6 +11,7 @@ from openapscontrib.mmhistorytools.historytools import NormalizeRecords
 from openapscontrib.mmhistorytools.historytools import ReconcileHistory
 from openapscontrib.mmhistorytools.historytools import ResolveHistory
 from openapscontrib.mmhistorytools.historytools import TrimHistory
+from openapscontrib.mmhistorytools.historytools import convert_reservoir_history_to_temp_basal
 from openapscontrib.mmhistorytools.models import Bolus, Meal, TempBasal, Exercise
 
 
@@ -2002,3 +2003,14 @@ class AppendDoseToHistoryTestCase(unittest.TestCase):
             ],
             h.appended_history
         )
+
+
+class ConvertReservoirHistoryToTempBasalTestCase(unittest.TestCase):
+    def test_history_with_prime(self):
+        with open(get_file_at_path('fixtures/reservoir_history_with_rewind_and_prime_input.json')) as fp:
+            reservoir = json.load(fp)
+
+        with open(get_file_at_path('fixtures/reservoir_history_with_rewind_and_prime_output.json')) as fp:
+            output = json.load(fp)
+
+        self.assertListEqual(output, convert_reservoir_history_to_temp_basal(reservoir))

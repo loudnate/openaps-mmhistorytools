@@ -714,6 +714,10 @@ def convert_reservoir_history_to_temp_basal(history):
     :return: A list of resolved TempBasal doses
     :rtype: list(TempBasal)
     """
+    # It takes a MM pump about 40s to deliver 1 Unit while bolusing
+    # Source: http://www.healthline.com/diabetesmine/ask-dmine-speed-insulin-pumps#3
+    # In addition, a basal rate of 30 U/hour would deliver 0.5 U/min
+    max_drop_per_minute = 2.0
     last_entry = history[0]
     last_datetime = parser.parse(last_entry['date'])
     doses = []
@@ -723,7 +727,7 @@ def convert_reservoir_history_to_temp_basal(history):
         volume_drop = last_entry['amount'] - entry['amount']
         minutes_elapsed = (entry_datetime - last_datetime).total_seconds() / 60.0
 
-        if volume_drop >= 0:
+        if 0 <= volume_drop <= max_drop_per_minute * minutes_elapsed:
             doses.insert(
                 0,
                 TempBasal(
