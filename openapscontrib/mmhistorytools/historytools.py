@@ -569,7 +569,7 @@ class NormalizeRecords(object):
                     t0 = datetime.combine(start_datetime.date(), basal_start_time)
                 else:
                     t0 = datetime.combine(end_datetime.date(), basal_start_time)
-                temp_basal_events[-1]["end_at"] = t0.isoformat()
+                temp_basal_events[0]["end_at"] = t0.isoformat()
             else:
                 t0 = start_datetime
 

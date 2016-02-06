@@ -1018,6 +1018,17 @@ class NormalizeRecordsTestCase(BasalScheduleTestCase):
             )
         )
 
+    def test_normalize_reservoir_history_doses(self):
+        with open(get_file_at_path('fixtures/reservoir_history_with_rewind_and_prime_output.json')) as fp:
+            resolved_records = json.load(fp)
+
+        with open(get_file_at_path('fixtures/normalized_reservoir_history_output.json')) as fp:
+            expected_output = json.load(fp)
+
+        records = NormalizeRecords(resolved_records, self.basal_rate_schedule).normalized_records
+
+        self.assertListEqual(expected_output, records)
+
 
 class MungeFixturesTestCase(BasalScheduleTestCase):
     def test_bolus_wizard_duplicates(self):
