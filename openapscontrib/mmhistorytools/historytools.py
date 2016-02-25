@@ -636,7 +636,7 @@ class AppendDoseToHistory(ParseHistory):
             doses = [doses]
 
         for event in doses:
-            if event.get('recieved', False) is True:
+            if self.was_event_received(event):
                 # Determine if the dose duration should be modified on append.
                 reconcile_with = None
                 if self.should_resolve and \
@@ -655,6 +655,20 @@ class AppendDoseToHistory(ParseHistory):
                     decoded_event = self.appended_history[0]
                     if decoded_event['start_at'] > reconcile_with['start_at']:
                         decoded_event['start_at'] = max(decoded_event['start_at'], reconcile_with.get('end_at'))
+
+    @staticmethod
+    def was_event_received(event):
+        if event.get('recieved', False):
+            return True
+        else:
+            try:
+                for (key, value) in event['requested'].iteritems():
+                    if event[key] != value:
+                        return False
+
+                return True
+            except (KeyError, TypeError):
+                return False
 
     def add_history_event(self, event):
         try:
