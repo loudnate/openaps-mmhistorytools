@@ -1949,6 +1949,47 @@ class AppendDoseToHistoryTestCase(unittest.TestCase):
 
         self.assertListEqual([{'type': 'Foo'}], h.appended_history)
 
+    def test_append_mmeowlink_dose(self):
+        h = AppendDoseToHistory([], [
+            {
+                "requested": {
+                    "duration": 30,
+                    "rate": 3.5,
+                    "temp": "absolute"
+                },
+                "temp": "absolute",
+                "timestamp": "2016-02-24T19:11:52.261855",
+                "rate": 3.5,
+                "recieved": False,
+                "duration": 30,
+                "type": "TempBasal"
+            }
+        ])
+
+        self.assertListEqual(
+            [
+                {
+                    '_type': 'TempBasalDuration',
+                    'temp': 'absolute',
+                    'recieved': False,
+                    'requested': {'duration': 30, 'rate': 3.5, 'temp': 'absolute'},
+                    'rate': 3.5,
+                    'timestamp': '2016-02-24T19:11:52.261855',
+                    'duration (min)': 30
+                },
+                {
+                    '_type': 'TempBasal',
+                    'temp': 'absolute',
+                    'recieved': False,
+                    'requested': {'duration': 30, 'rate': 3.5, 'temp': 'absolute'},
+                    'rate': 3.5,
+                    'timestamp': '2016-02-24T19:11:52.261855',
+                    'duration': 30
+                }
+            ],
+            h.appended_history
+        )
+
     def test_append_multiple_doses(self):
         with open(get_file_at_path('fixtures/set_two_doses.json')) as fp:
             doses = json.load(fp)
