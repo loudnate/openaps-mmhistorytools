@@ -662,11 +662,7 @@ class AppendDoseToHistory(ParseHistory):
             return True
         else:
             try:
-                for (key, value) in event['requested'].iteritems():
-                    if event[key] != value:
-                        return False
-
-                return True
+                return event['requested']['duration'] == event['duration']
             except (KeyError, TypeError):
                 return False
 
