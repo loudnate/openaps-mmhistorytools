@@ -11,6 +11,7 @@ from openapscontrib.mmhistorytools.historytools import NormalizeRecords
 from openapscontrib.mmhistorytools.historytools import ReconcileHistory
 from openapscontrib.mmhistorytools.historytools import ResolveHistory
 from openapscontrib.mmhistorytools.historytools import TrimHistory
+from openapscontrib.mmhistorytools.historytools import convert_reservoir_history_to_temp_basal
 from openapscontrib.mmhistorytools.models import Bolus, Meal, TempBasal, Exercise
 
 
@@ -110,6 +111,40 @@ class TrimHistoryTestCase(unittest.TestCase):
             [event['_description'] for event in h.trimmed_history]
         )
 
+    def test_trim_end_boundary_start_duration(self):
+        h = TrimHistory(
+            self.pump_history,
+            start_datetime=datetime(2015, 06, 19, 22),
+            duration_hours=6.0
+        )
+
+        self.assertListEqual(
+            [
+                'Bolus 2015-06-19T23:04:25 head[8], body[0] op[0x01]',
+                'LowReservoir 2015-06-19T23:05:19 head[2], body[0] op[0x34]',
+                'BolusWizard 2015-06-19T23:04:25 head[2], body[15] op[0x5b]',
+                'BasalProfileStart 2015-06-19T22:00:00 head[2], body[3] op[0x7b]'
+            ],
+            [event['_description'] for event in h.trimmed_history]
+        )
+
+    def test_trim_end_boundary_end_duration(self):
+        h = TrimHistory(
+            self.pump_history,
+            duration_hours=6.0,
+            end_datetime=datetime(2015, 06, 20, 04)
+        )
+
+        self.assertListEqual(
+            [
+                'Bolus 2015-06-19T23:04:25 head[8], body[0] op[0x01]',
+                'LowReservoir 2015-06-19T23:05:19 head[2], body[0] op[0x34]',
+                'BolusWizard 2015-06-19T23:04:25 head[2], body[15] op[0x5b]',
+                'BasalProfileStart 2015-06-19T22:00:00 head[2], body[3] op[0x7b]'
+            ],
+            [event['_description'] for event in h.trimmed_history]
+        )
+
     def test_trim_end_boundary_one_arg(self):
         h = TrimHistory(
             self.pump_history,
@@ -130,6 +165,42 @@ class TrimHistoryTestCase(unittest.TestCase):
             self.pump_history,
             start_datetime=datetime(2015, 06, 19, 04),
             end_datetime=datetime(2015, 06, 19, 22)
+        )
+
+        self.assertListEqual(
+            [
+                'BasalProfileStart 2015-06-19T22:00:00 head[2], body[3] op[0x7b]',
+                'Bolus 2015-06-19T21:31:15 head[8], body[0] op[0x01]',
+                'Bolus 2015-06-19T21:32:55 head[8], body[0] op[0x01]',
+                'BolusWizard 2015-06-19T21:31:15 head[2], body[15] op[0x5b]',
+                'Bolus 2015-06-19T21:02:39 head[8], body[0] op[0x01]'
+            ],
+            [event['_description'] for event in h.trimmed_history]
+        )
+
+    def test_trim_start_boundary_start_duration(self):
+        h = TrimHistory(
+            self.pump_history,
+            start_datetime=datetime(2015, 06, 19, 04),
+            duration_hours=18.0
+        )
+
+        self.assertListEqual(
+            [
+                'BasalProfileStart 2015-06-19T22:00:00 head[2], body[3] op[0x7b]',
+                'Bolus 2015-06-19T21:31:15 head[8], body[0] op[0x01]',
+                'Bolus 2015-06-19T21:32:55 head[8], body[0] op[0x01]',
+                'BolusWizard 2015-06-19T21:31:15 head[2], body[15] op[0x5b]',
+                'Bolus 2015-06-19T21:02:39 head[8], body[0] op[0x01]'
+            ],
+            [event['_description'] for event in h.trimmed_history]
+        )
+
+    def test_trim_start_boundary_end_duration(self):
+        h = TrimHistory(
+            self.pump_history,
+            end_datetime=datetime(2015, 06, 19, 22),
+            duration_hours=18.0
         )
 
         self.assertListEqual(
@@ -947,6 +1018,17 @@ class NormalizeRecordsTestCase(BasalScheduleTestCase):
             )
         )
 
+    def test_normalize_reservoir_history_doses(self):
+        with open(get_file_at_path('fixtures/reservoir_history_with_rewind_and_prime_output.json')) as fp:
+            resolved_records = json.load(fp)
+
+        with open(get_file_at_path('fixtures/normalized_reservoir_history_output.json')) as fp:
+            expected_output = json.load(fp)
+
+        records = NormalizeRecords(resolved_records, self.basal_rate_schedule).normalized_records
+
+        self.assertListEqual(expected_output, records)
+
 
 class MungeFixturesTestCase(BasalScheduleTestCase):
     def test_bolus_wizard_duplicates(self):
@@ -1639,7 +1721,7 @@ class AppendDoseToHistoryTestCase(unittest.TestCase):
             h.appended_history
         )
 
-        h = AppendDoseToHistory([{'type': 'Foo'}], doses, should_resolve=True)
+        h = AppendDoseToHistory([{'type': 'Foo'}], doses, should_resolve_doses=True)
 
         self.assertListEqual(
             [
@@ -1689,7 +1771,7 @@ class AppendDoseToHistoryTestCase(unittest.TestCase):
             h.appended_history
         )
 
-        h = AppendDoseToHistory([{'type': 'Foo'}], doses[0], should_resolve=True)
+        h = AppendDoseToHistory([{'type': 'Foo'}], doses[0], should_resolve_doses=True)
 
         self.assertListEqual(
             [
@@ -1752,6 +1834,68 @@ class AppendDoseToHistoryTestCase(unittest.TestCase):
             h.appended_history[:3]
         )
 
+    def test_auto_resolve_during_append(self):
+        with open(get_file_at_path('fixtures/set_dose.json')) as fp:
+            doses = json.load(fp)
+
+        h = AppendDoseToHistory([
+            {
+                'start_at': '2015-09-19T20:22:00',
+                'end_at': '2015-09-19T20:26:00',
+                'type': 'TempBasal',
+                'unit': 'U/hour',
+                'amount': 2.4
+            }
+        ], doses)
+
+        self.assertListEqual(
+            [
+                {
+                    'start_at': '2015-09-19T20:26:00',
+                    'end_at': '2015-09-19T20:55:27.468623',
+                    'type': 'TempBasal',
+                    'unit': 'U/hour',
+                    'amount': 1.425,
+                    'description': 'TempBasal: 1.425U/hour over 30min'
+                },
+                {
+                    'start_at': '2015-09-19T20:22:00',
+                    'end_at': '2015-09-19T20:26:00',
+                    'type': 'TempBasal',
+                    'unit': 'U/hour',
+                    'amount': 2.4
+                }
+            ],
+            h.appended_history
+        )
+
+    def test_auto_resolve_old_dose(self):
+        with open(get_file_at_path('fixtures/set_dose.json')) as fp:
+            doses = json.load(fp)
+
+        h = AppendDoseToHistory([
+            {
+                'start_at': '2015-09-19T20:30:00',
+                'end_at': '2015-09-19T21:00:00',
+                'type': 'TempBasal',
+                'unit': 'U/hour',
+                'amount': 2.4
+            }
+        ], doses)
+
+        self.assertListEqual(
+                [
+                    {
+                        'start_at': '2015-09-19T20:30:00',
+                        'end_at': '2015-09-19T21:00:00',
+                        'type': 'TempBasal',
+                        'unit': 'U/hour',
+                        'amount': 2.4
+                    }
+                ],
+                h.appended_history
+        )
+
     def test_append_single_dose_to_empty_history(self):
         with open(get_file_at_path('fixtures/set_dose.json')) as fp:
             doses = json.load(fp)
@@ -1780,7 +1924,7 @@ class AppendDoseToHistoryTestCase(unittest.TestCase):
             h.appended_history
         )
 
-        h = AppendDoseToHistory([], doses, should_resolve=True)
+        h = AppendDoseToHistory([], doses, should_resolve_doses=True)
 
         self.assertListEqual(
             [
@@ -1801,9 +1945,50 @@ class AppendDoseToHistoryTestCase(unittest.TestCase):
 
         self.assertListEqual([{'_type': 'Foo'}], h.appended_history)
 
-        h = AppendDoseToHistory([{'type': 'Foo'}], [], should_resolve=True)
+        h = AppendDoseToHistory([{'type': 'Foo'}], [], should_resolve_doses=True)
 
         self.assertListEqual([{'type': 'Foo'}], h.appended_history)
+
+    def test_append_mmeowlink_dose(self):
+        h = AppendDoseToHistory([], [
+            {
+                "requested": {
+                    "duration": 30,
+                    "rate": 3.5,
+                    "temp": "absolute"
+                },
+                "temp": "absolute",
+                "timestamp": "2016-02-24T19:11:52.261855",
+                "rate": 3.5,
+                "recieved": False,
+                "duration": 30,
+                "type": "TempBasal"
+            }
+        ])
+
+        self.assertListEqual(
+            [
+                {
+                    '_type': 'TempBasalDuration',
+                    'temp': 'absolute',
+                    'recieved': False,
+                    'requested': {'duration': 30, 'rate': 3.5, 'temp': 'absolute'},
+                    'rate': 3.5,
+                    'timestamp': '2016-02-24T19:11:52.261855',
+                    'duration (min)': 30
+                },
+                {
+                    '_type': 'TempBasal',
+                    'temp': 'absolute',
+                    'recieved': False,
+                    'requested': {'duration': 30, 'rate': 3.5, 'temp': 'absolute'},
+                    'rate': 3.5,
+                    'timestamp': '2016-02-24T19:11:52.261855',
+                    'duration': 30
+                }
+            ],
+            h.appended_history
+        )
 
     def test_append_multiple_doses(self):
         with open(get_file_at_path('fixtures/set_two_doses.json')) as fp:
@@ -1852,7 +2037,7 @@ class AppendDoseToHistoryTestCase(unittest.TestCase):
             h.appended_history
         )
 
-        h = AppendDoseToHistory([{'type': 'Foo'}], doses, should_resolve=True)
+        h = AppendDoseToHistory([{'type': 'Foo'}], doses, should_resolve_doses=True)
 
         self.assertListEqual(
             [
@@ -1870,3 +2055,14 @@ class AppendDoseToHistoryTestCase(unittest.TestCase):
             ],
             h.appended_history
         )
+
+
+class ConvertReservoirHistoryToTempBasalTestCase(unittest.TestCase):
+    def test_history_with_prime(self):
+        with open(get_file_at_path('fixtures/reservoir_history_with_rewind_and_prime_input.json')) as fp:
+            reservoir = json.load(fp)
+
+        with open(get_file_at_path('fixtures/reservoir_history_with_rewind_and_prime_output.json')) as fp:
+            output = json.load(fp)
+
+        self.assertListEqual(output, convert_reservoir_history_to_temp_basal(reservoir))

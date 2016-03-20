@@ -78,6 +78,13 @@ def _opt_json_file(filename):
         return json.load(argparse.FileType('r')(filename))
 
 
+def _opt_date_or_json_file(value):
+    try:
+        return _opt_date(_opt_json_file(value))
+    except argparse.ArgumentTypeError:
+        return _opt_date(value)
+
+
 class BaseUse(Use):
     def configure_app(self, app, parser):
         """Define command arguments.
@@ -123,23 +130,31 @@ class trim(BaseUse):
             default=None,
             help='The final timestamp of the window to return'
         )
+        parser.add_argument(
+            '--duration',
+            default=None,
+            help='The length of the window to return, in hours'
+        )
 
     def get_params(self, args):
         params = super(trim, self).get_params(args)
 
-        if 'start' in args and args.start:
-            params.update(start=args.start)
+        args_dict = dict(**args.__dict__)
 
-        if 'end' in args and args.end:
-            params.update(end=args.end)
+        for key in ('start', 'end', 'duration'):
+            value = args_dict.get(key)
+            if value is not None:
+                params[key] = value
 
         return params
 
     def get_program(self, params):
         args, kwargs = super(trim, self).get_program(params)
+
         kwargs.update(
-            start_datetime=_opt_date(params.get('start')),
-            end_datetime=_opt_date(params.get('end'))
+            start_datetime=_opt_date_or_json_file(params.get('start')),
+            end_datetime=_opt_date_or_json_file(params.get('end')),
+            duration_hours=float(params['duration']) if 'duration' in params else None
         )
 
         return args, kwargs
@@ -351,7 +366,7 @@ If that key isn't present, or its value is false, the record is ignored.
         args.append(_opt_json_file(params['dose']))
 
         if params.get('resolve'):
-            kwargs['should_resolve'] = True
+            kwargs['should_resolve_doses'] = True
 
         return args, kwargs
 

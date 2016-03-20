@@ -36,22 +36,39 @@ class ParseHistory(object):
 
 
 class TrimHistory(ParseHistory):
-    """Trims Medtronic pump history to a specified time window"""
-    def __init__(self, pump_history, start_datetime=None, end_datetime=None):
+    """Trims a list of historical entries to a specified time window"""
+    def __init__(self, history, start_datetime=None, end_datetime=None, duration_hours=None):
         super(TrimHistory, self).__init__()
+
+        if len(history) > 0:
+            if start_datetime is None and end_datetime is not None and duration_hours is not None:
+                start_datetime = end_datetime - timedelta(hours=duration_hours)
+            elif start_datetime is not None and end_datetime is None and duration_hours is not None:
+                end_datetime = start_datetime + timedelta(hours=duration_hours)
+
+            if start_datetime is None:
+                start_datetime = self._event_datetime(history[-1], 'start_at')
+
+            if end_datetime is None:
+                end_datetime = self._event_datetime(history[0], 'end_at')
 
         self.trimmed_history = []
         self.start_datetime = start_datetime
         self.end_datetime = end_datetime
 
-        if len(pump_history) > 0:
-            if self.start_datetime is None:
-                self.start_datetime = self._event_datetime(pump_history[-1])
+        self.trimmed_history.extend(self._filter_events_in_range(history))
 
-            if self.end_datetime is None:
-                self.end_datetime = self._event_datetime(pump_history[0])
+    @staticmethod
+    def _event_datetime(event, *args):
+        for key in args + ('dateString', 'display_time', 'date', 'timestamp'):
+            value = event.get(key)
+            if value:
+                try:
+                    return parser.parse(value)
+                except ValueError:
+                    pass
 
-        self.trimmed_history.extend(self._filter_events_in_range(pump_history))
+        raise ValueError
 
     def _filter_events_in_range(self, events):
         start_datetime = self.start_datetime
@@ -59,9 +76,14 @@ class TrimHistory(ParseHistory):
 
         def timestamp_in_range(event):
             if event:
-                timestamp = self._event_datetime(event)
-                if start_datetime <= timestamp <= end_datetime:
+                try:
+                    start_timestamp = self._event_datetime(event, 'end_at')
+                    end_timestamp = self._event_datetime(event, 'start_at')
+                except ValueError:
                     return True
+                else:
+                    if start_datetime <= start_timestamp and end_timestamp <= end_datetime:
+                        return True
             return False
 
         return filter(timestamp_in_range, events)
@@ -547,7 +569,7 @@ class NormalizeRecords(object):
                     t0 = datetime.combine(start_datetime.date(), basal_start_time)
                 else:
                     t0 = datetime.combine(end_datetime.date(), basal_start_time)
-                temp_basal_events[-1]["end_at"] = t0.isoformat()
+                temp_basal_events[0]["end_at"] = t0.isoformat()
             else:
                 t0 = start_datetime
 
@@ -595,23 +617,54 @@ class AppendDoseToHistory(ParseHistory):
     The expected dose record format is a dictionary with a key named "recieved" (sic).
     If that key isn't present, or its value is false, the record is ignored.
     """
-    def __init__(self, clean_history, doses, should_resolve=False):
+    def __init__(self, clean_history, doses, should_resolve_doses=False):
         """Initializes a new instance of the history parser
 
         :param clean_history: A list of pump history events in reverse-chronological order
         :type clean_history: list(dict)
         :param doses: A single dose event, or a list of dose events in chronological order
         :type doses: list(dict)|dict
+        :param should_resolve_doses: Whether the dose records should be resolved to match the input history
+        :type should_resolve_doses: bool
         """
         self.appended_history = clean_history
-        self.should_resolve = should_resolve
+
+        # Try to determine if the history input is already resolved
+        self.should_resolve = should_resolve_doses or (len(clean_history) > 0 and 'start_at' in clean_history[0])
 
         if isinstance(doses, dict):
             doses = [doses]
 
         for event in doses:
-            if event.get('recieved', False) is True:
+            if self.was_event_received(event):
+                # Determine if the dose duration should be modified on append.
+                reconcile_with = None
+                if self.should_resolve and \
+                        event['type'] == 'TempBasal' and \
+                        len(clean_history) > 0 and \
+                        clean_history[0].get('type') == 'TempBasal':
+                    reconcile_with = clean_history[0]
+
+                    # Ignore out-of-date doses
+                    if reconcile_with['start_at'] > event['timestamp']:
+                        continue
+
                 self.add_history_event(event)
+
+                if reconcile_with is not None:
+                    decoded_event = self.appended_history[0]
+                    if decoded_event['start_at'] > reconcile_with['start_at']:
+                        decoded_event['start_at'] = max(decoded_event['start_at'], reconcile_with.get('end_at'))
+
+    @staticmethod
+    def was_event_received(event):
+        if event.get('recieved', False):
+            return True
+        else:
+            try:
+                return event['requested']['duration'] == event['duration']
+            except (KeyError, TypeError):
+                return False
 
     def add_history_event(self, event):
         try:
@@ -671,6 +724,10 @@ def convert_reservoir_history_to_temp_basal(history):
     :return: A list of resolved TempBasal doses
     :rtype: list(TempBasal)
     """
+    # It takes a MM pump about 40s to deliver 1 Unit while bolusing
+    # Source: http://www.healthline.com/diabetesmine/ask-dmine-speed-insulin-pumps#3
+    # In addition, a basal rate of 30 U/hour would deliver 0.5 U/min
+    max_drop_per_minute = 2.0
     last_entry = history[0]
     last_datetime = parser.parse(last_entry['date'])
     doses = []
@@ -680,7 +737,7 @@ def convert_reservoir_history_to_temp_basal(history):
         volume_drop = last_entry['amount'] - entry['amount']
         minutes_elapsed = (entry_datetime - last_datetime).total_seconds() / 60.0
 
-        if volume_drop >= 0:
+        if 0 <= volume_drop <= max_drop_per_minute * minutes_elapsed:
             doses.insert(
                 0,
                 TempBasal(
