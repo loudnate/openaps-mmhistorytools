@@ -2,6 +2,7 @@ from collections import defaultdict
 from copy import copy
 from datetime import datetime
 from datetime import timedelta
+from datetime import time
 from dateutil import parser
 
 from .models import Bolus, Meal, TempBasal, Exercise, Unit
@@ -479,32 +480,42 @@ class NormalizeRecords(object):
 
         self.normalized_records.extend(decoded or [])
 
-    def basal_rates_in_range(self, start_time, end_time):
+    def _basal_rates_in_range(self, start_datetime, end_datetime):
         """Returns a list of the current basal rates effective between the specified times
 
-        :param start_time:
-        :type start_time: datetime.time
-        :param end_time:
-        :type end_time: datetime.time
+        :param start_datetime:
+        :type start_datetime: datetime
+        :param end_datetime:
+        :type end_datetime: datetime
         :return: A list of basal rates
         :rtype: list(dict)
 
         :raises AssertionError: The argument values are invalid
         """
-        assert (start_time < end_time)
+        assert (start_datetime <= end_datetime)
+
+        max_datetime = datetime.combine(start_datetime.date() + timedelta(days=1), time.min)
+
+        if end_datetime > max_datetime:
+            return self._basal_rates_in_range(start_datetime, max_datetime) + self._basal_rates_in_range(max_datetime, end_datetime)
+
+        start_date = start_datetime.date()
 
         start_index = 0
         end_index = len(self.basal_schedule)
 
         for index, basal_rate in enumerate(self.basal_schedule):
-            basal_start_time = parser.parse(basal_rate["start"]).time()
-            if start_time >= basal_start_time:
+            basal_start = datetime.combine(start_date, parser.parse(basal_rate["start"]).time())
+            if start_datetime >= basal_start:
                 start_index = index
-            if end_time < basal_start_time:
+            if end_datetime < basal_start:
                 end_index = index
                 break
 
-        return self.basal_schedule[start_index:end_index]
+        return map(lambda x: {
+            "start": datetime.combine(start_datetime.date(), parser.parse(x["start"]).time()),
+            "rate": x["rate"]
+        }, self.basal_schedule[start_index:end_index])
 
     def _basal_adjustments_in_range(
             self,
@@ -536,53 +547,28 @@ class NormalizeRecords(object):
         assert (end_datetime - start_datetime < timedelta(hours=24))
         assert (percent is not None or absolute is not None)
 
-        start_time = start_datetime.time()
-        end_time = end_datetime.time()
-
-        # If the requested timestamps cross a day boundary, return the combination of each
-        # single-day call
-        if start_time > end_time:
-            return self._basal_adjustments_in_range(
-                end_datetime.replace(hour=0, minute=0, second=0),
-                end_datetime,
-                percent=percent,
-                absolute=absolute,
-                description=description
-            ) + self._basal_adjustments_in_range(
-                start_datetime,
-                start_datetime.replace(hour=23, minute=59, second=59),
-                percent=percent,
-                absolute=absolute,
-                description=description
-            )
-
         temp_basal_events = []
-        basal_rates = self.basal_rates_in_range(start_time, end_time)
+        basal_rates = self._basal_rates_in_range(start_datetime, end_datetime)
 
         for index, basal_rate in enumerate(basal_rates):
-            basal_start_time = parser.parse(basal_rate["start"]).time()
+            # Find the delta of the new rate
+            rate = absolute
+            if percent is not None:
+                rate = basal_rate["rate"] * percent / 100.0
 
-            # If we are in a list longer than one element, adjust the boundary timestamps to the
-            # basal time
-            if index > 0:
-                if start_time <= basal_start_time:
-                    t0 = datetime.combine(start_datetime.date(), basal_start_time)
-                else:
-                    t0 = datetime.combine(end_datetime.date(), basal_start_time)
-                temp_basal_events[0]["end_at"] = t0.isoformat()
-            else:
+            amount = rate - basal_rate["rate"]
+
+            if index == 0:
                 t0 = start_datetime
+            else:
+                t0 = basal_rate["start"]
 
-            t1 = end_datetime
+            if index == len(basal_rates) - 1:
+                t1 = end_datetime
+            else:
+                t1 = basal_rates[index + 1]["start"]
 
             if t1 - t0 > timedelta(minutes=0):
-                # Find the delta of the new rate
-                rate = absolute
-                if percent is not None:
-                    rate = basal_rate["rate"] * percent / 100.0
-
-                amount = rate - basal_rate["rate"]
-
                 temp_basal_events.insert(0, TempBasal(
                     start_at=t0,
                     end_at=t1,
@@ -604,7 +590,7 @@ class NormalizeRecords(object):
                 events = self._basal_adjustments_in_range(
                     start_datetime,
                     end_datetime,
-                    description=event["description"],
+                    description=event.get("description"),
                     **{adjustment: event["amount"]}
                 )
 

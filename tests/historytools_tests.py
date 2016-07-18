@@ -1,5 +1,4 @@
-from datetime import datetime, timedelta
-from datetime import time
+from datetime import date, datetime, timedelta
 from dateutil import parser
 import json
 import os
@@ -916,31 +915,38 @@ class NormalizeRecordsTestCase(BasalScheduleTestCase):
     def test_basal_rates_in_range(self):
         h = NormalizeRecords([], self.basal_rate_schedule)
 
+        schedule = map(lambda x: {
+            "start": datetime.combine(date(2015, 01, 01), parser.parse(x["start"]).time()),
+            "rate": x["rate"]
+        }, self.basal_rate_schedule)
+
         self.assertListEqual(
-            self.basal_rate_schedule,
-            h.basal_rates_in_range(time(0, 0), time(23, 59))
+            schedule,
+            h._basal_rates_in_range(datetime(2015, 01, 01, 0, 0), datetime(2015, 01, 01, 23, 59))
         )
 
         self.assertListEqual(
-            self.basal_rate_schedule[0:1],
-            h.basal_rates_in_range(time(0, 0), time(1, 0))
+            schedule[0:1],
+            h._basal_rates_in_range(datetime(2015, 01, 01, 0, 0), datetime(2015, 01, 01, 1, 0))
         )
 
         self.assertListEqual(
-            self.basal_rate_schedule[1:3],
-            h.basal_rates_in_range(time(4, 0), time(9, 0))
+            schedule[1:3],
+            h._basal_rates_in_range(datetime(2015, 01, 01, 4, 0), datetime(2015, 01, 01, 9, 0))
         )
 
         self.assertListEqual(
-            self.basal_rate_schedule[5:6],
-            h.basal_rates_in_range(time(16, 0), time(20))
+            schedule[5:6],
+            h._basal_rates_in_range(datetime(2015, 01, 01, 16, 0), datetime(2015, 01, 01, 20))
+        )
+
+        self.assertListEqual(
+            schedule[1:2],
+            h._basal_rates_in_range(datetime(2015, 01, 01, 4), datetime(2015, 01, 01, 4))
         )
 
         with self.assertRaises(AssertionError):
-            h.basal_rates_in_range(time(4), time(4))
-
-        with self.assertRaises(AssertionError):
-            h.basal_rates_in_range(time(4), time(3))
+            h._basal_rates_in_range(datetime(2015, 01, 01, 4), datetime(2015, 01, 01, 3))
 
     def test_basal_adjustments_in_range(self):
         h = NormalizeRecords(
@@ -1005,7 +1011,7 @@ class NormalizeRecordsTestCase(BasalScheduleTestCase):
                 ),
                 TempBasal(
                     start_at=datetime(2015, 01, 01, 23),
-                    end_at=datetime(2015, 01, 01, 23, 59, 59),
+                    end_at=datetime(2015, 01, 02),
                     amount=-0.45,
                     unit="U/hour",
                     description=""
@@ -1024,6 +1030,17 @@ class NormalizeRecordsTestCase(BasalScheduleTestCase):
 
         with open(get_file_at_path('fixtures/normalized_reservoir_history_output.json')) as fp:
             expected_output = json.load(fp)
+
+        records = NormalizeRecords(resolved_records, self.basal_rate_schedule).normalized_records
+
+        self.assertListEqual(expected_output, records)
+
+    def test_normalize_edge_case_doses(self):
+        with open(get_file_at_path('fixtures/normalize_edge_case_doses_input.json')) as fp:
+            resolved_records = json.load(fp)
+
+        with open(get_file_at_path('fixtures/normalize_edge_case_doses_output.json')) as fp:
+            expected_output = list(reversed(json.load(fp)))
 
         records = NormalizeRecords(resolved_records, self.basal_rate_schedule).normalized_records
 
