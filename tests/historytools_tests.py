@@ -378,7 +378,7 @@ class CleanHistoryTestCase(unittest.TestCase):
             "timestamp": "2015-06-06T18:12:34"
         }], h.clean_history)
 
-    def test_resume_without_suspend_with_range(self):
+    def test_resume_without_suspend_with_start(self):
         pump_history = [
             {
                 "_type": "PumpResume",
@@ -395,6 +395,33 @@ class CleanHistoryTestCase(unittest.TestCase):
         ]
 
         h = CleanHistory(pump_history, start_datetime=datetime(2015, 06, 06, 12, 56, 34))
+
+        self.assertListEqual(pump_history + [{
+            "_type": "PumpSuspend",
+            "timestamp": "2015-06-06T12:56:34"
+        }], h.clean_history)
+
+    def test_resume_without_suspend_with_end_duration(self):
+        pump_history = [
+            {
+                "_type": "PumpResume",
+                "_description": "PumpResume 2015-06-06T20:50:01 head[2], body[0] op[0x1f]",
+                "timestamp": "2015-06-06T20:50:01",
+                "_body": "",
+                "_head": "1f20",
+                "_date": "41b214060f"
+            },
+            {
+                "_type": "OtherEvent",
+                "timestamp": "2015-06-06T18:12:34"
+            }
+        ]
+
+        h = CleanHistory(
+            pump_history,
+            end_datetime=datetime(2015, 06, 07, 06, 56, 34),
+            duration_hours=18.0
+        )
 
         self.assertListEqual(pump_history + [{
             "_type": "PumpSuspend",
@@ -449,7 +476,7 @@ class CleanHistoryTestCase(unittest.TestCase):
             h.clean_history
         )
 
-    def test_suspend_without_resume_with_range(self):
+    def test_suspend_without_resume_with_end(self):
         pump_history = [
             {
                 "_type": "OtherEvent",
@@ -497,6 +524,57 @@ class CleanHistoryTestCase(unittest.TestCase):
             h.clean_history
         )
 
+    def test_suspend_without_resume_with_start_duration(self):
+        pump_history = [
+            {
+                "_type": "OtherEvent",
+                "timestamp": "2015-06-06T22:12:34"
+            },
+            {
+                "_type": "OtherEvent",
+                "timestamp": "2015-06-06T21:12:34"
+            },
+            {
+                "_type": "PumpSuspend",
+                "_description": "PumpSuspend 2015-06-06T20:49:57 head[2], body[0] op[0x1e]",
+                "timestamp": "2015-06-06T20:49:57",
+                "_body": "",
+                "_head": "1e01",
+                "_date": "79b114060f"
+            }
+        ]
+
+        h = CleanHistory(
+            pump_history,
+            start_datetime=datetime(2015, 06, 06, 8, 02, 01),
+            duration_hours=18.0
+        )
+
+        self.assertListEqual(
+            [
+                {
+                    "_type": "OtherEvent",
+                    "timestamp": "2015-06-06T22:12:34"
+                },
+                {
+                    "_type": "OtherEvent",
+                    "timestamp": "2015-06-06T21:12:34"
+                },
+                {
+                    "_type": "PumpResume",
+                    "timestamp": "2015-06-07T02:02:01"
+                },
+                {
+                    "_type": "PumpSuspend",
+                    "_description": "PumpSuspend 2015-06-06T20:49:57 head[2], body[0] op[0x1e]",
+                    "timestamp": "2015-06-06T20:49:57",
+                    "_body": "",
+                    "_head": "1e01",
+                    "_date": "79b114060f"
+                }
+            ],
+            h.clean_history
+        )
 
 class ReconcileHistoryTestCase(unittest.TestCase):
     def test_overlapping_temp_basals(self):
