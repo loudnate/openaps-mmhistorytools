@@ -97,7 +97,7 @@ class CleanHistory(ParseHistory):
     - De-duplicates bolus wizard entries
     - Ensures suspend/resume records exist in pairs (inserting an extra event as necessary)
     """
-    def __init__(self, trimmed_history, start_datetime=None, end_datetime=None):
+    def __init__(self, trimmed_history, start_datetime=None, end_datetime=None, duration_hours=None):
         """Initializes a new instance of the history parser
 
         :param trimmed_history: A list of pump history events, in reverse-chronological order
@@ -109,16 +109,21 @@ class CleanHistory(ParseHistory):
         timestamp is used
         :type end_datetime: datetime
         """
+        if len(trimmed_history) > 0:
+            if start_datetime is None and end_datetime is not None and duration_hours is not None:
+                start_datetime = end_datetime - timedelta(hours=duration_hours)
+            elif start_datetime is not None and end_datetime is None and duration_hours is not None:
+                end_datetime = start_datetime + timedelta(hours=duration_hours)
+
+            if start_datetime is None:
+                start_datetime = self._event_datetime(trimmed_history[-1])
+
+            if end_datetime is None:
+                end_datetime = self._event_datetime(trimmed_history[0])
+
         self.clean_history = []
         self.start_datetime = start_datetime
         self.end_datetime = end_datetime
-
-        if len(trimmed_history) > 0:
-            if self.start_datetime is None:
-                self.start_datetime = self._event_datetime(trimmed_history[-1])
-
-            if self.end_datetime is None:
-                self.end_datetime = self._event_datetime(trimmed_history[0])
 
         # Temporary parsing state
         self._boluswizard_events_by_body = defaultdict(list)

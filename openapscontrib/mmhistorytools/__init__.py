@@ -190,23 +190,31 @@ Tasks performed by this pass:
             help='The final timestamp of the history window, used to simulate missing '
                  'suspend/resume events'
         )
+        parser.add_argument(
+            '--duration',
+            default=None,
+            help='The length of the history window, in hours'
+        )
 
     def get_params(self, args):
         params = super(clean, self).get_params(args)
 
-        if 'start' in args and args.start:
-            params.update(start=args.start)
+        args_dict = dict(**args.__dict__)
 
-        if 'end' in args and args.end:
-            params.update(end=args.end)
+        for key in ('start', 'end', 'duration'):
+            value = args_dict.get(key)
+            if value is not None:
+                params[key] = value
 
         return params
 
     def get_program(self, params):
         args, kwargs = super(clean, self).get_program(params)
+
         kwargs.update(
-            start_datetime=_opt_date(params.get('start')),
-            end_datetime=_opt_date(params.get('end'))
+            start_datetime=_opt_date_or_json_file(params.get('start')),
+            end_datetime=_opt_date_or_json_file(params.get('end')),
+            duration_hours=float(params['duration']) if 'duration' in params else None
         )
 
         return args, kwargs
@@ -400,11 +408,33 @@ has occurred, output from this command may not be sufficient for debugging.
             default=None,
             help='A file containing a basal profile by which to adjust TempBasal records'
         )
+        parser.add_argument(
+            '--start',
+            default=None,
+            help='The initial timestamp of the history window, used to simulate missing '
+                 'suspend/resume events'
+        )
+        parser.add_argument(
+            '--end',
+            default=None,
+            help='The final timestamp of the history window, used to simulate missing '
+                 'suspend/resume events'
+        )
+        parser.add_argument(
+            '--duration',
+            default=None,
+            help='The length of the history window, in hours'
+        )
 
     def get_params(self, args):
         params = super(prepare, self).get_params(args)
-        if 'basal_profile' in args and args.basal_profile:
-            params.update(basal_profile=args.basal_profile)
+
+        args_dict = dict(**args.__dict__)
+
+        for key in ('basal_profile', 'start', 'end', 'duration'):
+            value = args_dict.get(key)
+            if value is not None:
+                params[key] = value
 
         return params
 
@@ -412,18 +442,22 @@ has occurred, output from this command may not be sufficient for debugging.
         args, kwargs = super(prepare, self).get_program(params)
 
         kwargs.update(
-            basal_schedule=_opt_json_file(params.get('basal_profile'))
+            basal_schedule=_opt_json_file(params.get('basal_profile')),
+            start_datetime=_opt_date_or_json_file(params.get('start')),
+            end_datetime=_opt_date_or_json_file(params.get('end')),
+            duration_hours=float(params['duration']) if 'duration' in params else None
         )
 
         return args, kwargs
 
     def main(self, args, app):
         args, kwargs = self.get_program(self.get_params(args))
+        basal_schedule = kwargs.pop('basal_schedule', None)
 
-        clean_history = CleanHistory(*args).clean_history
+        clean_history = CleanHistory(*args, **kwargs).clean_history
         reconciled_history = ReconcileHistory(clean_history).reconciled_history
         resolved_records = ResolveHistory(reconciled_history).resolved_records
-        normalized_records = NormalizeRecords(resolved_records, **kwargs).normalized_records
+        normalized_records = NormalizeRecords(resolved_records, **{'basal_schedule': basal_schedule}).normalized_records
 
         return normalized_records
 

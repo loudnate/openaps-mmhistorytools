@@ -85,7 +85,7 @@ Tasks performed by this pass:
 
 Add a report flow to process pump history for analysis:
 ```
-$ openaps report add clean_history.json JSON history clean pump_history.json
+$ openaps report add clean_history.json JSON history clean pump_history.json --end clock.json --duration 5.0
 $ openaps report add reconciled_history.json JSON history reconcile clean_history.json
 $ openaps report add resolved_history.json JSON history resolve reconciled_history.json
 $ openaps report add normalized_history.json JSON history normalize resolved_history.json --basal-profile basal.json
@@ -93,7 +93,7 @@ $ openaps report add normalized_history.json JSON history normalize resolved_his
 
 This common flow is also available with the `prepare` command shortcut:
 ```
-$ openaps report add prepared_history.json JSON history prepare pump_history.json --basal-profile basal.json
+$ openaps report add prepared_history.json JSON history prepare pump_history.json --basal-profile basal.json --end clock.json --duration 5.0
 ```
 
 All `infile` arguments default to accept stdin, so commands can be chained to simplify testing:
